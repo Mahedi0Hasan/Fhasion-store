@@ -77,7 +77,11 @@ Until step 3 is done, the site still works for browsing. Checkout shows a clear 
 
 ## Not yet built
 
- checkout, payments, shipping, admin. Links to those routes 404 for now. See the checklist in `CLAUDE.md`.
+- Info pages: About, Contact, FAQ, Privacy, Terms, Shipping and Returns policies. Footer links to these 404 for now.
+- Bengali language and a BDT/USD price switcher on the storefront
+- bKash and Nagad: need merchant accounts and sandbox verification
+- Pathao and Steadfast booking from the dashboard: needs courier API keys and verification
+- Phase 8: Vercel deployment
 
 ## Images: action needed before launch
 
