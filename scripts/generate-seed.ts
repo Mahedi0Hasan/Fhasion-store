@@ -5,7 +5,7 @@
  */
 import { writeFileSync } from "node:fs";
 import { CATEGORIES, PRODUCTS } from "../src/lib/catalog";
-import { SHIPPING_ZONES } from "../src/lib/shipping";
+import { SHIPPING_ZONES } from "../src/lib/shipping/zones";
 
 const q = (v: string | null | undefined) => (v === null || v === undefined ? "null" : `'${v.replace(/'/g, "''")}'`);
 const arr = (a: string[]) => `array[${a.map(q).join(", ")}]::text[]`;

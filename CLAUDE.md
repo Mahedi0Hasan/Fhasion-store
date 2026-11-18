@@ -31,9 +31,14 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (tokens in 
 - [x] Phase 1: scaffold, tokens, fonts, layout (announcement bar, header, mobile menu, footer), docs
 - [x] Phase 2: homepage (hero slider, collections, new arrivals, promo, best sellers, story, lookbook, newsletter), product card, reveal system
 - [x] Phase 3: shop (search/filters/sort/pagination, URL-driven), product detail (gallery zoom, sizes, stock, qty, JSON-LD), cart drawer + page, server-validated coupons (`/api/coupon`), shipping estimate, wishlist. Cart/wishlist live in localStorage until Phase 4. Checkout button is intentionally disabled until Phase 5.
-- [ ] Phase 4: Supabase schema + RLS + seed, products from DB, `newsletter_subscribers`. **No customer login/accounts (user decision, 2026-11-18)**: guest checkout only; order tracking by order number + phone at `/track-order`. Auth exists only for admins.
-- [ ] Phase 5: checkout, orders, payment adapters (COD, bKash, Nagad, Stripe), shipping adapters (Pathao, Steadfast, manual), tracking
+- [x] Phase 4: Supabase schema + RLS + seed (generated from `src/lib/catalog.ts` via `npm run seed:generate`), `newsletter_subscribers`. Products are still read from `catalog.ts`; switch reads to the DB together with admin product management (Phase 6). **No customer login/accounts (user decision, 2026-11-18)**: guest checkout only; order tracking by order number + phone at `/track-order`. Auth exists only for admins.
+- [x] Phase 5: guest checkout (`/checkout`), atomic `place_order` SQL function, signed confirmation (`/order/[number]?t=`), `/track-order`, payment adapters (COD live; Stripe Checkout in BDT + verified webhook; bKash/Nagad registered but unavailable until merchant sandbox is verified), courier adapters (manual live; Pathao/Steadfast disabled until verified).
+- [ ] Schedule `select public.release_unpaid_orders();` every 10 min with pg_cron in production.
 - [ ] Phase 6: admin dashboard
 - [ ] Phase 7: tests (unit + Playwright), authz tests
 - [ ] Phase 8: Vercel + Supabase production deploy, docs
 - [ ] i18n (EN/BN) and BDT/USD display with configured rates
+
+## Testing
+- `npm run test:db`: 19 SQL tests (RLS, pricing, coupons, stock, concurrency, webhooks, tracking) against a throwaway Postgres with `supabase/tests/00_supabase_shim.sql`. Env: `TEST_PG_HOST`, `TEST_PG_PORT`.
+- The end-to-end browser suite was run against Postgres + PostgREST locally (24 checks, all passing on 2026-11-19).

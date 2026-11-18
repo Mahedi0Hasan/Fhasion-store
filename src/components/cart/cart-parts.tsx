@@ -57,9 +57,9 @@ export function CouponForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function apply(e: React.FormEvent) {
-    e.preventDefault();
-    if (!code.trim()) return;
+  // Not a <form>: this block is also rendered inside the checkout form.
+  async function apply() {
+    if (!code.trim() || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -88,21 +88,21 @@ export function CouponForm() {
     );
   }
   return (
-    <form onSubmit={apply} className="space-y-1.5">
+    <div className="space-y-1.5">
       <div className="flex gap-2">
         <label htmlFor="coupon" className="sr-only">Discount code</label>
-        <input id="coupon" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Discount code" autoComplete="off" className="h-10 min-w-0 flex-1 rounded-full border border-ink/15 bg-transparent px-4 text-sm uppercase placeholder:normal-case placeholder:text-stone/70 focus:border-ink focus:outline-none" />
-        <button type="submit" disabled={busy || !code.trim()} className="h-10 rounded-full border border-ink px-5 text-xs font-medium transition-colors hover:bg-ink hover:text-ivory disabled:opacity-40">
+        <input id="coupon" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); apply(); } }} placeholder="Discount code" autoComplete="off" className="h-10 min-w-0 flex-1 rounded-full border border-ink/15 bg-transparent px-4 text-sm uppercase placeholder:normal-case placeholder:text-stone/70 focus:border-ink focus:outline-none" />
+        <button type="button" onClick={apply} disabled={busy || !code.trim()} className="h-10 rounded-full border border-ink px-5 text-xs font-medium transition-colors hover:bg-ink hover:text-ivory disabled:opacity-40">
           {busy ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
         </button>
       </div>
       {error && <p role="alert" className="pl-4 text-xs text-clay">{error}</p>}
-    </form>
+    </div>
   );
 }
 
 export function CartSummary({ showZones = true }: { showZones?: boolean }) {
-  const { subtotal, coupon } = useStore();
+  const { subtotal, coupon, closeDrawer } = useStore();
   const [zone, setZone] = useState<ShippingZoneId>("dhaka");
   const discount = coupon?.discountBDT ?? 0;
   const shipping = shippingFor(zone, subtotal - discount);
@@ -136,12 +136,14 @@ export function CartSummary({ showZones = true }: { showZones?: boolean }) {
       {z.freeOverBDT !== undefined && subtotal - discount < z.freeOverBDT && (
         <p className="text-xs text-stone">Add {formatBDT(z.freeOverBDT - (subtotal - discount))} more for free delivery {z.label.toLowerCase()}.</p>
       )}
-      <div>
-        <button type="button" disabled aria-describedby="checkout-note" className="h-12 w-full cursor-not-allowed rounded-full bg-ink text-sm font-medium text-ivory opacity-50">
-          Checkout
-        </button>
-        <p id="checkout-note" className="mt-2 text-center text-[0.7rem] text-stone">Secure checkout opens soon. Your bag is saved on this device.</p>
-      </div>
+      <Link
+        href="/checkout"
+        onClick={closeDrawer}
+        className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-full bg-ink text-sm font-medium text-ivory"
+      >
+        <span className="absolute inset-0 origin-left scale-x-0 bg-clay transition-transform duration-500 ease-[var(--ease-soft)] group-hover:scale-x-100" />
+        <span className="relative">Checkout</span>
+      </Link>
     </div>
   );
 }
