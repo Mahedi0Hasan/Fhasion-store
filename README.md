@@ -20,9 +20,16 @@ Checks: `npx tsc --noEmit` · `npx eslint src` · `npm run build`
 - Homepage: featured collections (arched frames), new arrivals, parallax promo banner, best sellers, brand story, lookbook, newsletter
 - `/api/newsletter`: Zod validation + rate limit; returns an honest 503 until Supabase is configured
 
+## Phase 3 (done)
+
+- `/shop`: search, category / size / colour / price filters, 5 sort orders, pagination, empty state, mobile filter sheet. All state lives in the URL, so it can be shared
+- `/product/[slug]`: image gallery with hover zoom, size selector with per-size stock and sold-out states, quantity, add to bag, wishlist, related products, Product JSON-LD, Open Graph
+- Cart drawer + `/cart`: quantity capped at stock, remove, coupon codes validated server-side (demo codes `WELCOME10`, `DEMO500`), shipping estimate by zone
+- `/wishlist`: saved on the device
+
 ## Not yet built
 
-Shop, product pages, cart, wishlist, accounts, checkout, payments, shipping, admin. Links to those routes 404 for now. See the checklist in `CLAUDE.md`.
+Accounts, checkout, payments, shipping, admin. Links to those routes 404 for now. See the checklist in `CLAUDE.md`.
 
 ## Images: action needed before launch
 

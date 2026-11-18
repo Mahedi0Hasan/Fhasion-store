@@ -40,7 +40,7 @@ const COLLECTIONS = [
 export function FeaturedCollections() {
   return (
     <section className="container-x py-24 md:py-36">
-      <SectionHead eyebrow="Collections" title="Dressed in quiet colour" href="/collections" cta="All collections" />
+      <SectionHead eyebrow="Collections" title="Dressed in quiet colour" href="/shop" cta="All collections" />
       <div className="grid gap-5 md:grid-cols-3 md:gap-6">
         {COLLECTIONS.map((c, i) => (
           <Reveal key={c.title} delay={i * 0.12} className={i === 1 ? "md:mt-20" : ""}>

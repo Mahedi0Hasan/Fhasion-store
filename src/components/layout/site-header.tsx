@@ -5,12 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { useStore } from "@/components/cart/store-provider";
 
 const NAV = [
   { label: "Women", href: "/shop?category=womens-fashion" },
   { label: "Men", href: "/shop?category=mens-fashion" },
   { label: "Kids", href: "/shop?category=kids-fashion" },
-  { label: "Collections", href: "/collections" },
+  { label: "Collections", href: "/shop" },
   { label: "Journal", href: "/about" },
 ];
 
@@ -48,10 +49,14 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const { count, wishlist, openDrawer, closeDrawer, hydrated } = useStore();
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
 
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    setOpen(false);
+    closeDrawer();
+  }, [pathname, closeDrawer]);
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -96,15 +101,22 @@ export function SiteHeader() {
 
           {/* Right */}
           <div className="flex items-center justify-end gap-0.5 md:gap-1.5">
-            <IconLink href="/shop" label="Search"><Search className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
+            <IconLink href="/shop#search" label="Search"><Search className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
             <IconLink href="/account" label="Account" className="hidden sm:grid"><User className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
-            <IconLink href="/account/wishlist" label="Wishlist" className="hidden sm:grid"><Heart className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
-            <IconLink href="/cart" label="Bag, 0 items">
+            <IconLink href="/wishlist" label={`Wishlist, ${wishlist.length} items`} className="hidden sm:grid">
               <span className="relative">
-                <ShoppingBag className="size-[1.15rem]" strokeWidth={1.5} />
-                <span className="absolute -right-2 -top-1.5 grid size-4 place-items-center rounded-full bg-ink text-[0.6rem] font-medium text-ivory">0</span>
+                <Heart className="size-[1.15rem]" strokeWidth={1.5} />
+                {hydrated && wishlist.length > 0 && <Dot n={wishlist.length} />}
               </span>
             </IconLink>
+            <button type="button" onClick={openDrawer} aria-label={`Open bag, ${count} items`} className="grid size-10 place-items-center rounded-full transition-colors hover:bg-sand">
+              <span className="relative">
+                <ShoppingBag className="size-[1.15rem]" strokeWidth={1.5} />
+                <AnimatePresence>
+                  {hydrated && count > 0 && <Dot key={count} n={count} />}
+                </AnimatePresence>
+              </span>
+            </button>
           </div>
         </div>
       </header>
@@ -152,7 +164,7 @@ export function SiteHeader() {
               </ul>
               <div className="mt-auto space-y-3 border-t border-line pt-6 text-sm text-stone">
                 <Link href="/account" className="block">Account</Link>
-                <Link href="/account/wishlist" className="block">Wishlist</Link>
+                <Link href="/wishlist" className="block">Wishlist</Link>
                 <Link href="/contact" className="block">Contact</Link>
               </div>
             </motion.aside>
@@ -177,5 +189,19 @@ function IconLink({ href, label, className = "grid", children }: { href: string;
     <Link href={href} aria-label={label} className={`${className} size-10 place-items-center rounded-full transition-colors hover:bg-sand`}>
       {children}
     </Link>
+  );
+}
+
+function Dot({ n }: { n: number }) {
+  return (
+    <motion.span
+      initial={{ scale: 0.4, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.4, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 500, damping: 22 }}
+      className="absolute -right-2 -top-1.5 grid size-4 place-items-center rounded-full bg-ink text-[0.6rem] font-medium text-ivory"
+    >
+      {n > 9 ? "9+" : n}
+    </motion.span>
   );
 }
