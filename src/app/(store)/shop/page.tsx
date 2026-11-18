@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/animations/reveal";
 import { ProductCard } from "@/components/products/product-card";
-import { categoryName, parseShopQuery, queryProducts, type ShopQuery } from "@/lib/catalog";
+import { categoryName, facets, parseShopQuery, queryProducts, type ShopQuery } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-source";
 import { ShopControls } from "./shop-controls";
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata({ searchParams }: { searchParams: SP }): Promise<Metadata> {
-  const q = parseShopQuery(await searchParams);
-  const name = q.category ? categoryName(q.category) : undefined;
+  const { products, categories } = await getCatalog();
+  const q = parseShopQuery(await searchParams, categories, facets(products));
+  const name = q.category ? categoryName(categories, q.category) : undefined;
   return {
     title: name ?? (q.q ? `Search: ${q.q}` : "Shop all"),
     description: `Shop ${name ?? "the full DEMO collection"}: considered clothing, shoes and accessories. Delivery across Bangladesh and worldwide.`,
@@ -18,9 +20,11 @@ export async function generateMetadata({ searchParams }: { searchParams: SP }): 
 }
 
 export default async function ShopPage({ searchParams }: { searchParams: SP }) {
-  const query = parseShopQuery(await searchParams);
-  const { items, total, page, pages } = queryProducts(query);
-  const title = query.category ? categoryName(query.category)! : query.q ? `“${query.q}”` : "Shop all";
+  const { products, categories } = await getCatalog();
+  const f = facets(products);
+  const query = parseShopQuery(await searchParams, categories, f);
+  const { items, total, page, pages } = queryProducts(products, categories, query);
+  const title = query.category ? categoryName(categories, query.category)! : query.q ? `“${query.q}”` : "Shop all";
 
   return (
     <div className="container-x pb-24 pt-10 md:pt-14">
@@ -31,7 +35,7 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
       </nav>
       <h1 className="mt-4 font-serif text-5xl leading-none text-ink md:text-8xl">{title}</h1>
 
-      <ShopControls query={query} total={total}>
+      <ShopControls query={query} total={total} categories={categories} facets={f}>
         {items.length === 0 ? (
           <div className="flex flex-col items-start gap-4 py-20">
             <p className="font-serif text-3xl text-ink">Nothing matches just yet.</p>

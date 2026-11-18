@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Reveal, RevealWords } from "@/components/animations/reveal";
 import { ProductCard } from "@/components/products/product-card";
 import { byTag } from "@/lib/catalog";
+import { getProducts } from "@/lib/catalog-source";
 import { ParallaxImage } from "./parallax-image";
 
 function SectionHead({ eyebrow, title, href, cta }: { eyebrow: string; title: string; href?: string; cta?: string }) {
@@ -74,8 +75,8 @@ export function FeaturedCollections() {
 }
 
 /* ───────────── Product rails ───────────── */
-export function ProductRail({ tag, eyebrow, title }: { tag: "new" | "bestseller"; eyebrow: string; title: string }) {
-  const items = byTag(tag).slice(0, 4);
+export async function ProductRail({ tag, eyebrow, title }: { tag: "new" | "bestseller"; eyebrow: string; title: string }) {
+  const items = byTag(await getProducts(), tag).slice(0, 4);
   return (
     <section className="container-x py-20 md:py-28">
       <SectionHead eyebrow={eyebrow} title={title} href={`/shop?sort=${tag === "new" ? "new" : "popular"}`} cta="Shop all" />

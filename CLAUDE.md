@@ -34,11 +34,11 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (tokens in 
 - [x] Phase 4: Supabase schema + RLS + seed (generated from `src/lib/catalog.ts` via `npm run seed:generate`), `newsletter_subscribers`. Products are still read from `catalog.ts`; switch reads to the DB together with admin product management (Phase 6). **No customer login/accounts (user decision, 2026-11-18)**: guest checkout only; order tracking by order number + phone at `/track-order`. Auth exists only for admins.
 - [x] Phase 5: guest checkout (`/checkout`), atomic `place_order` SQL function, signed confirmation (`/order/[number]?t=`), `/track-order`, payment adapters (COD live; Stripe Checkout in BDT + verified webhook; bKash/Nagad registered but unavailable until merchant sandbox is verified), courier adapters (manual live; Pathao/Steadfast disabled until verified).
 - [ ] Schedule `select public.release_unpaid_orders();` every 10 min with pg_cron in production.
-- [ ] Phase 6: admin dashboard
+- [x] Phase 6: admin dashboard at `/admin` (Supabase Auth email+password via `@supabase/ssr`; middleware gate + server `requireStaff/requireAdmin` + RLS). Overview KPIs & 30-day chart, low stock, orders (search/filter/detail, `staff_update_order` with transition rules + restock on cancel, COD paid on delivery), products (CRUD, sizes/SKU/stock, photo upload to Storage bucket `product-images` with magic-byte checks), inventory, categories, coupons, customers (grouped by phone), reports, settings (delivery fees; admin-only). Storefront now reads products from the DB (`src/lib/catalog-source.ts`, tag `catalog`), falling back to `DEMO_PRODUCTS`.
 - [ ] Phase 7: tests (unit + Playwright), authz tests
 - [ ] Phase 8: Vercel + Supabase production deploy, docs
 - [ ] i18n (EN/BN) and BDT/USD display with configured rates
 
 ## Testing
-- `npm run test:db`: 19 SQL tests (RLS, pricing, coupons, stock, concurrency, webhooks, tracking) against a throwaway Postgres with `supabase/tests/00_supabase_shim.sql`. Env: `TEST_PG_HOST`, `TEST_PG_PORT`.
-- The end-to-end browser suite was run against Postgres + PostgREST locally (24 checks, all passing on 2026-11-19).
+- `npm run test:db`: 22 SQL tests (RLS, pricing, coupons, stock, concurrency, webhooks, tracking) against a throwaway Postgres with `supabase/tests/00_supabase_shim.sql`. Env: `TEST_PG_HOST`, `TEST_PG_PORT`.
+- The end-to-end browser suite was run against Postgres + PostgREST locally (24 checks, all passing on 2026-11-19). Admin flow tested against real Supabase Auth (GoTrue v2.177) + PostgREST: 30 checks passing.

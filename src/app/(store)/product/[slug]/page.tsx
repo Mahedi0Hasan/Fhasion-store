@@ -3,19 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/animations/reveal";
 import { ProductCard } from "@/components/products/product-card";
-import { categoryName, getProduct, priceOf, PRODUCTS, relatedProducts, totalStock } from "@/lib/catalog";
+import { categoryName, priceOf, relatedProducts, totalStock } from "@/lib/catalog";
+import { getCatalog, getProductBySlug } from "@/lib/catalog-source";
 import { Gallery } from "./gallery";
 import { PurchasePanel } from "./purchase-panel";
 
 type Params = Promise<{ slug: string }>;
 
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  return (await getCatalog()).products.map((p) => ({ slug: p.slug }));
 }
-export const dynamicParams = false;
+export const revalidate = 120; // new products render on first request
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const p = getProduct((await params).slug);
+  const p = await getProductBySlug((await params).slug);
   if (!p) return {};
   return {
     title: `${p.name}, ${p.colour}`,
@@ -26,10 +27,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function ProductPage({ params }: { params: Params }) {
-  const p = getProduct((await params).slug);
+  const { slug } = await params;
+  const { products, categories } = await getCatalog();
+  const p = products.find((x) => x.slug === slug);
   if (!p) notFound();
-  const related = relatedProducts(p);
-  const cat = categoryName(p.category);
+  const related = relatedProducts(products, p);
+  const cat = categoryName(categories, p.category);
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const jsonLd = {
@@ -38,7 +41,7 @@ export default async function ProductPage({ params }: { params: Params }) {
     name: p.name,
     description: p.description,
     color: p.colour,
-    image: p.images.map((i) => `${site}${i.src}`),
+    image: p.images.map((i) => (i.src.startsWith("http") ? i.src : `${site}${i.src}`)),
     sku: p.id.toUpperCase(),
     brand: { "@type": "Brand", name: "DEMO" },
     offers: {

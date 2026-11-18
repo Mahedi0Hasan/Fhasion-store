@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Search, SlidersHorizontal, X } from "lucide-react";
-import { ALL_COLOURS, ALL_SIZES, CATEGORIES, PRICE_BOUNDS, SORTS, type ShopQuery } from "@/lib/catalog";
+import { SORTS, type Category, type Facets, type ShopQuery } from "@/lib/catalog";
 
 type Patch = Partial<Omit<ShopQuery, "page">>;
 
@@ -21,7 +21,7 @@ function toSearch(q: ShopQuery, patch: Patch) {
   return sp.toString(); // any filter change resets to page 1
 }
 
-export function ShopControls({ query, total, children }: { query: ShopQuery; total: number; children: React.ReactNode }) {
+export function ShopControls({ query, total, categories, facets, children }: { query: ShopQuery; total: number; categories: Category[]; facets: Facets; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, start] = useTransition();
@@ -40,7 +40,7 @@ export function ShopControls({ query, total, children }: { query: ShopQuery; tot
   };
 
   const activeCount = (query.category ? 1 : 0) + query.sizes.length + query.colours.length + (query.min !== undefined || query.max !== undefined ? 1 : 0);
-  const panel = <FilterPanel query={query} update={update} />;
+  const panel = <FilterPanel query={query} update={update} categories={categories} facets={facets} />;
 
   return (
     <>
@@ -107,7 +107,7 @@ export function ShopControls({ query, total, children }: { query: ShopQuery; tot
   );
 }
 
-function FilterPanel({ query, update }: { query: ShopQuery; update: (p: Patch) => void }) {
+function FilterPanel({ query, update, categories, facets }: { query: ShopQuery; update: (p: Patch) => void; categories: Category[]; facets: Facets }) {
   const [min, setMin] = useState(query.min?.toString() ?? "");
   const [max, setMax] = useState(query.max?.toString() ?? "");
   useEffect(() => { setMin(query.min?.toString() ?? ""); setMax(query.max?.toString() ?? ""); }, [query.min, query.max]);
@@ -125,14 +125,14 @@ function FilterPanel({ query, update }: { query: ShopQuery; update: (p: Patch) =
       <Group title="Category">
         <ul className="space-y-1.5">
           <li><CatButton active={!query.category} onClick={() => update({ category: undefined })}>All</CatButton></li>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <li key={c.slug}><CatButton active={query.category === c.slug} onClick={() => update({ category: c.slug })}>{c.name}</CatButton></li>
           ))}
         </ul>
       </Group>
       <Group title="Size">
         <div className="flex flex-wrap gap-2">
-          {ALL_SIZES.map((s) => {
+          {facets.sizes.map((s) => {
             const on = query.sizes.includes(s);
             return (
               <button key={s} type="button" aria-pressed={on} onClick={() => update({ sizes: toggle(query.sizes, s) })} className={`h-9 min-w-11 rounded-full border px-3 text-xs transition-colors ${on ? "border-ink bg-ink text-ivory" : "border-ink/15 hover:border-ink"}`}>
@@ -144,7 +144,7 @@ function FilterPanel({ query, update }: { query: ShopQuery; update: (p: Patch) =
       </Group>
       <Group title="Colour">
         <div className="flex flex-wrap gap-2.5">
-          {ALL_COLOURS.map((c) => {
+          {facets.colours.map((c) => {
             const on = query.colours.includes(c.name);
             return (
               <button key={c.name} type="button" aria-pressed={on} aria-label={c.name} title={c.name} onClick={() => update({ colours: toggle(query.colours, c.name) })} className={`relative grid size-9 place-items-center rounded-full ring-1 ring-offset-2 ring-offset-cream transition ${on ? "ring-ink" : "ring-transparent hover:ring-ink/30"}`}>
@@ -166,10 +166,10 @@ function FilterPanel({ query, update }: { query: ShopQuery; update: (p: Patch) =
           className="flex items-center gap-2"
         >
           <label htmlFor="pmin" className="sr-only">Minimum price</label>
-          <input id="pmin" inputMode="numeric" placeholder={String(PRICE_BOUNDS.min)} value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ""))} className="h-9 w-full rounded-full border border-ink/15 bg-transparent px-3 text-xs focus:border-ink focus:outline-none" />
+          <input id="pmin" inputMode="numeric" placeholder={String(facets.price.min)} value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ""))} className="h-9 w-full rounded-full border border-ink/15 bg-transparent px-3 text-xs focus:border-ink focus:outline-none" />
           <span className="text-stone">–</span>
           <label htmlFor="pmax" className="sr-only">Maximum price</label>
-          <input id="pmax" inputMode="numeric" placeholder={String(PRICE_BOUNDS.max)} value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ""))} className="h-9 w-full rounded-full border border-ink/15 bg-transparent px-3 text-xs focus:border-ink focus:outline-none" />
+          <input id="pmax" inputMode="numeric" placeholder={String(facets.price.max)} value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ""))} className="h-9 w-full rounded-full border border-ink/15 bg-transparent px-3 text-xs focus:border-ink focus:outline-none" />
           <button type="submit" className="h-9 shrink-0 rounded-full bg-ink px-3 text-xs text-ivory">Go</button>
         </form>
       </Group>

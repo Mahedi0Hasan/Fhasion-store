@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useStore } from "@/components/cart/store-provider";
 import { ProductCard } from "@/components/products/product-card";
-import { getProductById } from "@/lib/catalog";
 
 export function WishlistClient() {
-  const { wishlist, hydrated } = useStore();
-  const items = wishlist.map(getProductById).filter((p) => p !== undefined);
+  const { wishlist, hydrated, getProduct } = useStore();
+  const items = wishlist.map(getProduct).filter((p) => p !== undefined);
   return (
     <div className="container-x py-14 md:py-20">
       <h1 className="font-serif text-5xl text-ink md:text-7xl">Wishlist</h1>

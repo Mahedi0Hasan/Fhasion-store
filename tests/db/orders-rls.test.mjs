@@ -234,3 +234,66 @@ test("release_unpaid_orders frees stock from abandoned online payments", () => s
   assert.ok((await c.query("select public.release_unpaid_orders() n")).rows[0].n >= 1);
   assert.equal(await stock(c, "DM-P2-XL"), s);
 }));
+
+// ───────────── admin (Phase 6) ─────────────
+async function makeUser(role) {
+  const uid = crypto.randomUUID();
+  await service(async (c) => {
+    await c.query("reset role");
+    await c.query("insert into auth.users (id, email) values ($1, $2)", [uid, `${role ?? "none"}-${uid.slice(0, 8)}@x.com`]);
+    if (role) await c.query("update profiles set role = $1 where id = $2", [role, uid]);
+  });
+  return uid;
+}
+/** Expect a failure without poisoning the surrounding transaction. */
+async function rejects(c, fn, re) {
+  await c.query("savepoint expect");
+  await assert.rejects(fn(), re);
+  await c.query("rollback to savepoint expect");
+}
+const upd = (c, id, status, tracking = null) =>
+  c.query("select (public.staff_update_order($1, $2::order_status, null, 'Steadfast', $3)).status s", [id, status, tracking]).then((r) => r.rows[0].s);
+
+test("admin fns: anon blocked, no-role user forbidden and sees zero", async () => {
+  const placed = await service((c) => place(c, order({ lines: [{ product: "p8", size: "S", qty: 1 }] })));
+  await as("anon", async (c) => { await assert.rejects(c.query("select public.staff_dashboard(7)"), /permission denied/); });
+  const nobody = await makeUser(null);
+  await as("authenticated", async (c) => {
+    await rejects(c, () => upd(c, placed.order_id, "confirmed"), /FORBIDDEN/);
+    const d = (await c.query("select public.staff_dashboard(7) d")).rows[0].d;
+    assert.equal(d.orders, 0, "RLS hides orders from non-staff");
+    assert.equal((await c.query("select count(*)::int n from staff_customers")).rows[0].n, 0);
+    await rejects(c, () => c.query("insert into products (slug,name,category_id,gender,colour,colour_hex,price_bdt) select 'x','X',id,'men','Red','#ff0000',100 from categories limit 1"), /row-level security/);
+  }, nobody);
+});
+
+test("staff: status flow, tracking required, bad transitions, COD paid on delivery", async () => {
+  const staff = await makeUser("staff");
+  const placed = await service((c) => place(c, order({ lines: [{ product: "p8", size: "L", qty: 1 }] })));
+  await as("authenticated", async (c) => {
+    assert.equal(await upd(c, placed.order_id, "confirmed"), "confirmed");
+    await rejects(c, () => upd(c, placed.order_id, "shipped"), /TRACKING_REQUIRED/);
+    await rejects(c, () => upd(c, placed.order_id, "delivered"), /BAD_TRANSITION/);
+    assert.equal(await upd(c, placed.order_id, "shipped", "SF123"), "shipped");
+    assert.equal(await upd(c, placed.order_id, "delivered"), "delivered");
+    const o = (await c.query("select payment_status, tracking_number, courier from orders where id=$1", [placed.order_id])).rows[0];
+    assert.deepEqual(o, { payment_status: "paid", tracking_number: "SF123", courier: "Steadfast" });
+    const d = (await c.query("select public.staff_dashboard(7) d")).rows[0].d;
+    assert.ok(d.orders >= 1 && d.revenue_bdt > 0);
+  }, staff);
+});
+
+test("staff cancel restocks; staff can't change delivery fees, admin can", async () => {
+  const staff = await makeUser("staff");
+  const admin = await makeUser("admin");
+  const s = await service((c) => stock(c, "DM-P8-XL"));
+  const placed = await service((c) => place(c, order({ lines: [{ product: "p8", size: "XL", qty: 1 }] })));
+  await as("authenticated", async (c) => {
+    assert.equal(await upd(c, placed.order_id, "cancelled"), "cancelled");
+    assert.equal(await stock(c, "DM-P8-XL"), s);
+    assert.equal((await c.query("update shipping_zones set fee_bdt = 1 returning id")).rowCount, 0);
+  }, staff);
+  await as("authenticated", async (c) => {
+    assert.equal((await c.query("update shipping_zones set fee_bdt = 90 where id='dhaka' returning id")).rowCount, 1);
+  }, admin);
+});

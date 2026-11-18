@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { getProductById, priceOf, type Product } from "@/lib/catalog";
+import { priceOf, type Product } from "@/lib/catalog";
 
 export type CartLine = { productId: string; size: string; qty: number };
 export type ResolvedLine = CartLine & { product: Product; unitPrice: number; lineTotal: number; available: number };
@@ -22,6 +22,7 @@ type StoreCtx = {
   coupon: AppliedCoupon | null;
   setCoupon: (c: AppliedCoupon | null) => void;
   wishlist: string[];
+  getProduct: (id: string) => Product | undefined;
   toggleWish: (productId: string) => void;
   isWished: (productId: string) => boolean;
 };
@@ -49,7 +50,7 @@ function save(key: string, value: unknown) {
 }
 
 /** Drop unknown products / sizes and clamp quantities to stock. */
-function sanitize(raw: unknown): CartLine[] {
+function sanitize(raw: unknown, getProductById: (id: string) => Product | undefined): CartLine[] {
   if (!Array.isArray(raw)) return [];
   const out: CartLine[] = [];
   for (const r of raw) {
@@ -64,7 +65,9 @@ function sanitize(raw: unknown): CartLine[] {
   return out;
 }
 
-export function StoreProvider({ children }: { children: React.ReactNode }) {
+export function StoreProvider({ products, children }: { products: Product[]; children: React.ReactNode }) {
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const getProductById = useCallback((id: string) => byId.get(id), [byId]);
   const [hydrated, setHydrated] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -76,10 +79,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   cartRef.current = cart;
 
   useEffect(() => {
-    setCart(sanitize(load(CART_KEY, [])));
+    setCart(sanitize(load(CART_KEY, []), getProductById));
     setWishlist(load<string[]>(WISH_KEY, []).filter((id) => typeof id === "string" && getProductById(id)));
     setHydrated(true);
-  }, []);
+  }, [getProductById]);
   useEffect(() => { if (hydrated) save(CART_KEY, cart); }, [cart, hydrated]);
   useEffect(() => { if (hydrated) save(WISH_KEY, wishlist); }, [wishlist, hydrated]);
   // Any cart change invalidates a previously validated discount amount.
@@ -100,7 +103,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCart(next);
     const result = { ok: true };
     return result;
-  }, []);
+  }, [getProductById]);
 
   const setQty = useCallback((productId: string, size: string, qty: number) => {
     setCart((prev) =>
@@ -110,7 +113,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return { ...l, qty: Math.max(1, Math.min(qty, stock, MAX_PER_LINE)) };
       }),
     );
-  }, []);
+  }, [getProductById]);
 
   const remove = useCallback((productId: string, size: string) => {
     setCart((prev) => prev.filter((l) => !(l.productId === productId && l.size === size)));
@@ -142,10 +145,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       coupon,
       setCoupon,
       wishlist,
+      getProduct: getProductById,
       toggleWish,
       isWished: (id) => wishlist.includes(id),
     };
-  }, [cart, hydrated, add, setQty, remove, drawerOpen, openDrawer, closeDrawer, coupon, wishlist, toggleWish]);
+  }, [cart, hydrated, add, setQty, remove, drawerOpen, openDrawer, closeDrawer, coupon, wishlist, toggleWish, getProductById]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -28,7 +28,9 @@ export type Product = {
   popularity: number;
 };
 
-export const CATEGORIES = [
+export type Category = { slug: string; name: string };
+
+export const DEMO_CATEGORIES: Category[] = [
   { slug: "womens-fashion", name: "Women's Fashion" },
   { slug: "mens-fashion", name: "Men's Fashion" },
   { slug: "kids-fashion", name: "Kids' Fashion" },
@@ -42,7 +44,7 @@ export const CATEGORIES = [
   { slug: "shoes", name: "Shoes" },
   { slug: "bags", name: "Bags" },
   { slug: "accessories", name: "Accessories" },
-] as const;
+];
 
 /** Gender-level categories match by `gender`; the rest by `category`. */
 const GENDER_CATEGORY: Record<string, Product["gender"]> = {
@@ -50,7 +52,8 @@ const GENDER_CATEGORY: Record<string, Product["gender"]> = {
   "mens-fashion": "men",
 };
 
-export const PRODUCTS: Product[] = [
+/** Demo catalogue: seed source and fallback when no database is connected. */
+export const DEMO_PRODUCTS: Product[] = [
   {
     id: "p1",
     slug: "cloud-cashmere-cardigan-ivory",
@@ -206,19 +209,17 @@ export const PRODUCTS: Product[] = [
 
 /* ───────────────────────── helpers ───────────────────────── */
 
-export const byTag = (tag: Product["tags"][number]) => PRODUCTS.filter((p) => p.tags.includes(tag));
-export const getProduct = (slug: string) => PRODUCTS.find((p) => p.slug === slug);
-export const getProductById = (id: string) => PRODUCTS.find((p) => p.id === id);
+export const byTag = (list: Product[], tag: Product["tags"][number]) => list.filter((p) => p.tags.includes(tag));
 export const priceOf = (p: Product) => p.salePriceBDT ?? p.priceBDT;
 export const totalStock = (p: Product) => Object.values(p.stock).reduce((a, b) => a + b, 0);
-export const categoryName = (slug: string) => CATEGORIES.find((c) => c.slug === slug)?.name;
+export const categoryName = (cats: Category[], slug: string) => cats.find((c) => c.slug === slug)?.name;
 
 export function formatBDT(amount: number) {
   return `৳ ${new Intl.NumberFormat("en-IN").format(amount)}`;
 }
 
-export function relatedProducts(p: Product, n = 4) {
-  return PRODUCTS.filter((x) => x.id !== p.id)
+export function relatedProducts(list: Product[], p: Product, n = 4) {
+  return list.filter((x) => x.id !== p.id)
     .map((x) => ({ x, score: (x.category === p.category ? 2 : 0) + (x.gender === p.gender ? 1 : 0) + x.popularity / 1000 }))
     .sort((a, b) => b.score - a.score)
     .slice(0, n)
@@ -249,9 +250,20 @@ export type ShopQuery = {
 
 export const PAGE_SIZE = 6;
 
-export const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "36", "37", "38", "39", "40"];
-export const ALL_COLOURS = Array.from(new Map(PRODUCTS.map((p) => [p.colour, p.colourHex])).entries()).map(([name, hex]) => ({ name, hex }));
-export const PRICE_BOUNDS = { min: 0, max: Math.ceil(Math.max(...PRODUCTS.map(priceOf)) / 1000) * 1000 };
+const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
+export function facets(list: Product[]) {
+  const sizes = Array.from(new Set(list.flatMap((p) => Object.keys(p.stock)))).sort((a, b) => {
+    const ia = SIZE_ORDER.indexOf(a), ib = SIZE_ORDER.indexOf(b);
+    if (ia >= 0 && ib >= 0) return ia - ib;
+    if (ia >= 0) return -1;
+    if (ib >= 0) return 1;
+    return a.localeCompare(b, undefined, { numeric: true });
+  });
+  const colours = Array.from(new Map(list.map((p) => [p.colour, p.colourHex])).entries()).map(([name, hex]) => ({ name, hex }));
+  const max = list.length ? Math.ceil(Math.max(...list.map(priceOf)) / 1000) * 1000 : 0;
+  return { sizes, colours, price: { min: 0, max } };
+}
+export type Facets = ReturnType<typeof facets>;
 
 type Params = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -264,15 +276,15 @@ const num = (v: string | undefined) => {
 };
 
 /** Parse untrusted URL params into a safe, bounded query. */
-export function parseShopQuery(sp: Params): ShopQuery {
+export function parseShopQuery(sp: Params, cats: Category[], f: Facets): ShopQuery {
   const sortRaw = one(sp.sort);
   const sort = (SORTS.some((s) => s.value === sortRaw) ? sortRaw : "featured") as Sort;
   const cat = one(sp.category);
   return {
     q: one(sp.q)?.trim().slice(0, 80) || undefined,
-    category: CATEGORIES.some((c) => c.slug === cat) ? cat : undefined,
-    sizes: many(sp.size).filter((s) => ALL_SIZES.includes(s)),
-    colours: many(sp.colour).filter((c) => ALL_COLOURS.some((x) => x.name === c)),
+    category: cats.some((c) => c.slug === cat) ? cat : undefined,
+    sizes: many(sp.size).filter((s) => f.sizes.includes(s)),
+    colours: many(sp.colour).filter((c) => f.colours.some((x) => x.name === c)),
     min: num(one(sp.min)),
     max: num(one(sp.max)),
     sort,
@@ -280,10 +292,10 @@ export function parseShopQuery(sp: Params): ShopQuery {
   };
 }
 
-export function queryProducts(q: ShopQuery) {
+export function queryProducts(all: Product[], cats: Category[], q: ShopQuery) {
   const term = q.q?.toLowerCase();
-  let list = PRODUCTS.filter((p) => {
-    if (term && ![p.name, p.colour, p.description, categoryName(p.category) ?? ""].some((s) => s.toLowerCase().includes(term))) return false;
+  let list = all.filter((p) => {
+    if (term && ![p.name, p.colour, p.description, categoryName(cats, p.category) ?? ""].some((s) => s.toLowerCase().includes(term))) return false;
     if (q.category) {
       const g = GENDER_CATEGORY[q.category];
       if (g ? !(p.gender === g || p.gender === "unisex") : p.category !== q.category) return false;

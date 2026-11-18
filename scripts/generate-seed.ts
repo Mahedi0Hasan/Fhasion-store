@@ -4,7 +4,7 @@
  *   npx tsx scripts/generate-seed.ts
  */
 import { writeFileSync } from "node:fs";
-import { CATEGORIES, PRODUCTS } from "../src/lib/catalog";
+import { DEMO_CATEGORIES as CATEGORIES, DEMO_PRODUCTS as PRODUCTS } from "../src/lib/catalog";
 import { SHIPPING_ZONES } from "../src/lib/shipping/zones";
 
 const q = (v: string | null | undefined) => (v === null || v === undefined ? "null" : `'${v.replace(/'/g, "''")}'`);

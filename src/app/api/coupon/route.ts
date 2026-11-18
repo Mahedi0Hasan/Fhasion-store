@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { couponRequestSchema } from "@/lib/validation/cart";
 import { evaluateCoupon } from "@/lib/coupons";
-import { getProductById, priceOf } from "@/lib/catalog";
+import { priceOf } from "@/lib/catalog";
+import { getProducts } from "@/lib/catalog-source";
 import { rateLimit } from "@/lib/rate-limit";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 
@@ -28,8 +29,9 @@ export async function POST(req: Request) {
   }
 
   // Fallback (no DB yet): demo coupon table, prices recomputed server-side.
+  const products = await getProducts();
   const subtotal = lines.reduce((sum, l) => {
-    const p = getProductById(l.productId);
+    const p = products.find((x) => x.id === l.productId);
     return p ? sum + priceOf(p) * l.qty : sum;
   }, 0);
   const result = evaluateCoupon(code, subtotal);

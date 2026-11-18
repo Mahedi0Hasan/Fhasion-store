@@ -52,9 +52,13 @@ No customer accounts: shoppers check out as guests and track orders with order n
    SUPABASE_SERVICE_ROLE_KEY=...        # server-only, never expose
    ORDER_TOKEN_SECRET=...               # openssl rand -base64 48
    ```
-4. **Database → Extensions**: enable `pg_cron`, then run:
+4. **First admin**: Authentication → Users → *Add user* (email + password, auto-confirm). Then, in the SQL Editor:
+   `update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');`
+   Sign in at `/admin`. Use `role = 'staff'` for team members. Staff can't change delivery fees or see Settings.
+   Also turn **off** "Allow new users to sign up" under Authentication → Providers → Email, because the store has no customer accounts.
+5. **Database → Extensions**: enable `pg_cron`, then run:
    `select cron.schedule('release-unpaid', '*/10 * * * *', 'select public.release_unpaid_orders()');`
-5. Optional, for card payments: set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/webhooks/stripe`.
+6. Optional, for card payments: set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/webhooks/stripe`.
 
 Until step 3 is done, the site still works for browsing. Checkout shows a clear "being connected" notice and accepts no orders.
 
@@ -63,9 +67,17 @@ Until step 3 is done, the site still works for browsing. Checkout shows a clear 
 - `npm run typecheck`, `npm run lint`, `npm run build`
 - `npm run test:db`: 19 database tests (see `CLAUDE.md`)
 
+## Phase 6 (done): admin dashboard (`/admin`)
+
+- **Sign-in**: Supabase Auth with email and password, rate-limited. Only users whose profile has a `staff` or `admin` role get in. Access is checked three times: the middleware, the server page, and the database's RLS, because every dashboard query runs as the signed-in user.
+- **Overview**: revenue, orders, customers, products, a 30-day sales chart, low-stock alerts, recent orders, and top products.
+- **Orders**: search, status filter, and an order page with status changes (confirm → packing → shipped with courier + tracking → delivered; cancel puts stock back; refund). Cash on delivery is marked paid on delivery.
+- **Products**: create and edit, sizes with SKU and stock, and photos (uploaded to the Supabase Storage bucket `product-images`, created by the migration; files are checked by content, not by name). Changes show in the store immediately.
+- **Also**: inventory, categories, coupons, customers (grouped by phone, since there are no accounts), sales reports (7 / 30 / 90 / 365 days), and settings for delivery fees (admins only).
+
 ## Not yet built
 
-Admin dashboard (Phase 6), checkout, payments, shipping, admin. Links to those routes 404 for now. See the checklist in `CLAUDE.md`.
+ checkout, payments, shipping, admin. Links to those routes 404 for now. See the checklist in `CLAUDE.md`.
 
 ## Images: action needed before launch
 
