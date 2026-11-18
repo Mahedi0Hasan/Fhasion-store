@@ -11,7 +11,7 @@ export function WishlistClient() {
   return (
     <div className="container-x py-14 md:py-20">
       <h1 className="font-serif text-5xl text-ink md:text-7xl">Wishlist</h1>
-      <p className="mt-3 text-sm text-stone">Saved on this device. Sign-in sync arrives with customer accounts.</p>
+      <p className="mt-3 text-sm text-stone">Saved on this device.</p>
       {!hydrated ? null : items.length === 0 ? (
         <div className="mt-14 flex flex-col items-start gap-5">
           <p className="text-stone">Nothing saved yet. Tap the heart on any piece to keep it here.</p>

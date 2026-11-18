@@ -31,7 +31,7 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (tokens in 
 - [x] Phase 1: scaffold, tokens, fonts, layout (announcement bar, header, mobile menu, footer), docs
 - [x] Phase 2: homepage (hero slider, collections, new arrivals, promo, best sellers, story, lookbook, newsletter), product card, reveal system
 - [x] Phase 3: shop (search/filters/sort/pagination, URL-driven), product detail (gallery zoom, sizes, stock, qty, JSON-LD), cart drawer + page, server-validated coupons (`/api/coupon`), shipping estimate, wishlist. Cart/wishlist live in localStorage until Phase 4. Checkout button is intentionally disabled until Phase 5.
-- [ ] Phase 4: Supabase schema + RLS + seed, auth, accounts, products from DB, `newsletter_subscribers`
+- [ ] Phase 4: Supabase schema + RLS + seed, products from DB, `newsletter_subscribers`. **No customer login/accounts (user decision, 2026-11-18)**: guest checkout only; order tracking by order number + phone at `/track-order`. Auth exists only for admins.
 - [ ] Phase 5: checkout, orders, payment adapters (COD, bKash, Nagad, Stripe), shipping adapters (Pathao, Steadfast, manual), tracking
 - [ ] Phase 6: admin dashboard
 - [ ] Phase 7: tests (unit + Playwright), authz tests

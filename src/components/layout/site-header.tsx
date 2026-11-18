@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useStore } from "@/components/cart/store-provider";
 
 const NAV = [
@@ -102,7 +102,6 @@ export function SiteHeader() {
           {/* Right */}
           <div className="flex items-center justify-end gap-0.5 md:gap-1.5">
             <IconLink href="/shop#search" label="Search"><Search className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
-            <IconLink href="/account" label="Account" className="hidden sm:grid"><User className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
             <IconLink href="/wishlist" label={`Wishlist, ${wishlist.length} items`} className="hidden sm:grid">
               <span className="relative">
                 <Heart className="size-[1.15rem]" strokeWidth={1.5} />
@@ -163,7 +162,7 @@ export function SiteHeader() {
                 ))}
               </ul>
               <div className="mt-auto space-y-3 border-t border-line pt-6 text-sm text-stone">
-                <Link href="/account" className="block">Account</Link>
+                <Link href="/track-order" className="block">Track an order</Link>
                 <Link href="/wishlist" className="block">Wishlist</Link>
                 <Link href="/contact" className="block">Contact</Link>
               </div>

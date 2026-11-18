@@ -18,7 +18,7 @@ const COLUMNS = [
       ["FAQ", "/faq"],
       ["Shipping policy", "/shipping-policy"],
       ["Returns & refunds", "/return-policy"],
-      ["Track an order", "/account/orders"],
+      ["Track an order", "/track-order"],
     ],
   },
   {
