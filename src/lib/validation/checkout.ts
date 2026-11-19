@@ -20,7 +20,7 @@ export const checkoutSchema = z
   .object({
     name: text(2, 120, "err.name"),
     email: z.string().trim().toLowerCase().email("err.email").max(254),
-    country: z.enum(COUNTRY_CODES, { errorMap: () => ({ message: "err.country" }) }),
+    country: z.enum(COUNTRY_CODES, { error: "err.country" }),
     phone: z.string().trim().min(6, "err.phoneMissing").max(24),
     address_line1: text(3, 200, "err.address"),
     address_line2: z.string().trim().max(200).optional().or(z.literal("")),
@@ -28,7 +28,7 @@ export const checkoutSchema = z
     region: z.string().trim().max(80).optional().or(z.literal("")),
     postal_code: z.string().trim().max(20).optional().or(z.literal("")),
     delivery_area: z.enum(["dhaka", "outside-dhaka"]).optional(),
-    payment_method: z.enum(PAYMENT_METHODS, { errorMap: () => ({ message: "err.method" }) }),
+    payment_method: z.enum(PAYMENT_METHODS, { error: "err.method" }),
     notes: z.string().trim().max(500).optional().or(z.literal("")),
     coupon_code: z.string().trim().max(32).optional().or(z.literal("")),
   })

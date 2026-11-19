@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/validation/contact";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { readJson } from "@/lib/read-json";
 import { getI18n } from "@/lib/i18n/server";
 import { translateMessage } from "@/lib/i18n";
 
 export async function POST(req: Request) {
   const { t, dict, locale } = await getI18n();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (!rateLimit(`contact:${ip}`, 3, 10 * 60_000).ok) {
+  const ip = clientIp(req.headers);
+  if (!(await rateLimit(`contact:${ip}`, 3, 10 * 60_000)).ok) {
     return NextResponse.json({ error: t("err.rate") }, { status: 429 });
   }
 
-  const parsed = contactSchema.safeParse(await req.json().catch(() => null));
+  const parsed = contactSchema.safeParse(await readJson(req));
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     // A filled honeypot means a bot: pretend success, store nothing.

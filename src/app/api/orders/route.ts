@@ -5,7 +5,8 @@ import { orderRequestSchema, toE164, zoneFor } from "@/lib/validation/checkout";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 import { hasOrderTokenSecret, signOrder } from "@/lib/order-token";
 import { PAYMENT_ADAPTERS } from "@/lib/payments";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { readJson } from "@/lib/read-json";
 import { getI18n } from "@/lib/i18n/server";
 import { translateMessage } from "@/lib/i18n";
 import { localizeCouponError } from "@/lib/i18n/coupon";
@@ -14,15 +15,15 @@ const FRIENDLY = new Set(["OUT_OF_STOCK", "UNKNOWN_ITEM", "INVALID_QTY", "INVALI
 
 export async function POST(req: Request) {
   const { t, dict, bdt: money } = await getI18n();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (!rateLimit(`order:${ip}`, 5, 60_000).ok) {
+  const ip = clientIp(req.headers);
+  if (!(await rateLimit(`order:${ip}`, 5, 60_000)).ok) {
     return NextResponse.json({ error: t("err.rate") }, { status: 429 });
   }
   if (!isDbConfigured() || !hasOrderTokenSecret()) {
     return NextResponse.json({ error: t("err.notConnected") }, { status: 503 });
   }
 
-  const parsed = orderRequestSchema.safeParse(await req.json().catch(() => null));
+  const parsed = orderRequestSchema.safeParse(await readJson(req));
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     return NextResponse.json({ error: translateMessage(dict, issue?.message) || t("err.check"), field: issue?.path.at(-1) }, { status: 400 });

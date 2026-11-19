@@ -3,19 +3,20 @@ import { couponRequestSchema } from "@/lib/validation/cart";
 import { evaluateCoupon } from "@/lib/coupons";
 import { priceOf } from "@/lib/catalog";
 import { getProducts } from "@/lib/catalog-source";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { readJson } from "@/lib/read-json";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 import { getI18n } from "@/lib/i18n/server";
 import { localizeCouponError, localizeCouponLabel } from "@/lib/i18n/coupon";
 
 export async function POST(req: Request) {
   const { t, bdt: money, num } = await getI18n();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (!rateLimit(`coupon:${ip}`, 10, 60_000).ok) {
+  const ip = clientIp(req.headers);
+  if (!(await rateLimit(`coupon:${ip}`, 10, 60_000)).ok) {
     return NextResponse.json({ error: t("err.rate") }, { status: 429 });
   }
 
-  const parsed = couponRequestSchema.safeParse(await req.json().catch(() => null));
+  const parsed = couponRequestSchema.safeParse(await readJson(req));
   if (!parsed.success) return NextResponse.json({ error: t("err.check") }, { status: 400 });
   const { code, lines } = parsed.data;
 

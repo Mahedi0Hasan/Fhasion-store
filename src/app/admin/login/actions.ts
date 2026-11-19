@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isAuthConfigured, userClient } from "@/lib/supabase/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -14,10 +14,10 @@ const schema = z.object({
 
 export async function signIn(_prev: { error?: string }, fd: FormData): Promise<{ error?: string }> {
   if (!isAuthConfigured()) return { error: "Admin sign-in isn't connected yet." };
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  const ip = clientIp(await headers());
   const parsed = schema.safeParse(Object.fromEntries(fd));
   // Limit by IP and by account to slow down password guessing.
-  if (!rateLimit(`login:ip:${ip}`, 10, 15 * 60_000).ok || (parsed.success && !rateLimit(`login:acct:${parsed.data.email}`, 5, 15 * 60_000).ok)) {
+  if (!(await rateLimit(`login:ip:${ip}`, 10, 15 * 60_000)).ok || (parsed.success && !(await rateLimit(`login:acct:${parsed.data.email}`, 5, 15 * 60_000)).ok)) {
     return { error: "Too many attempts. Please wait 15 minutes." };
   }
   if (!parsed.success) return { error: "Email or password is incorrect." };

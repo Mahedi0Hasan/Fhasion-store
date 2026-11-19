@@ -5,7 +5,7 @@ import { z } from "zod";
 import { COUNTRY_CODES } from "@/lib/countries";
 import { toE164 } from "@/lib/validation/checkout";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { getI18n } from "@/lib/i18n/server";
 
 export type TrackedOrder = {
@@ -30,8 +30,8 @@ const schema = z.object({
 
 export async function trackOrder(_prev: TrackState, fd: FormData): Promise<TrackState> {
   const { t } = await getI18n();
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (!rateLimit(`track:${ip}`, 10, 60_000).ok) return { error: t("err.rate") };
+  const ip = clientIp(await headers());
+  if (!(await rateLimit(`track:${ip}`, 10, 60_000)).ok) return { error: t("err.rate") };
   if (!isDbConfigured()) return { error: t("err.trackNotConnected") };
 
   const parsed = schema.safeParse(Object.fromEntries(fd));

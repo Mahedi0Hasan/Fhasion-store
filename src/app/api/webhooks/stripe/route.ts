@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret || !isDbConfigured()) return NextResponse.json({ error: "Not configured" }, { status: 503 });
 
+  if (Number(req.headers.get("content-length") ?? 0) > 512 * 1024) return NextResponse.json({ error: "Too large" }, { status: 413 });
   const raw = await req.text();
   if (!verifyStripeSignature(raw, req.headers.get("stripe-signature"), secret)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { newsletterSchema } from "@/lib/validation/newsletter";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { readJson } from "@/lib/read-json";
 import { serverT } from "@/lib/i18n/server";
 import { translateMessage, DICTS } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
@@ -8,13 +9,13 @@ import { getLocale } from "@/lib/i18n/server";
 export async function POST(req: Request) {
   const t = await serverT();
   const dict = DICTS[await getLocale()];
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  const rl = rateLimit(`newsletter:${ip}`, 5, 60_000);
+  const ip = clientIp(req.headers);
+  const rl = await rateLimit(`newsletter:${ip}`, 5, 60_000);
   if (!rl.ok) {
     return NextResponse.json({ error: t("err.rate") }, { status: 429 });
   }
 
-  const body = await req.json().catch(() => null);
+  const body = await readJson(req);
   const parsed = newsletterSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: translateMessage(dict, parsed.error.issues[0]?.message) || t("err.check") }, { status: 400 });
