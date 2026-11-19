@@ -13,7 +13,7 @@ import { localizeCouponError } from "@/lib/i18n/coupon";
 const FRIENDLY = new Set(["OUT_OF_STOCK", "UNKNOWN_ITEM", "INVALID_QTY", "INVALID_ZONE", "COD_BD_ONLY", "EMPTY_CART"]);
 
 export async function POST(req: Request) {
-  const { t, dict, money } = await getI18n();
+  const { t, dict, bdt: money } = await getI18n();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   if (!rateLimit(`order:${ip}`, 5, 60_000).ok) {
     return NextResponse.json({ error: t("err.rate") }, { status: 429 });

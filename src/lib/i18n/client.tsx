@@ -2,22 +2,28 @@
 
 import { createContext, useCallback, useContext, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { DICTS, formatMoney, formatNumber, LOCALE_COOKIE, translate, translateMessage, type Locale } from "./index";
+import { CURRENCY_COOKIE, DICTS, formatNumber, LOCALE_COOKIE, makeMoney, translate, translateMessage, type Currency, type Locale } from "./index";
 
 type Ctx = {
   locale: Locale;
   dict: (typeof DICTS)[Locale];
   t: (key: string, vars?: Record<string, string | number>) => string;
   tm: (msg: string | undefined, vars?: Record<string, string | number>) => string;
+  /** Display price in the chosen currency (USD is display-only). */
   money: (n: number) => string;
+  /** Always BDT, for amounts that are charged. */
+  bdt: (n: number) => string;
   num: (n: number) => string;
   setLocale: (l: Locale) => void;
+  currency: Currency;
+  bdtPerUsd: number | null;
+  setCurrency: (c: Currency) => void;
   switching: boolean;
 };
 
 const I18nCtx = createContext<Ctx | null>(null);
 
-export function I18nProvider({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+export function I18nProvider({ locale, currency, bdtPerUsd, children }: { locale: Locale; currency: Currency; bdtPerUsd: number | null; children: React.ReactNode }) {
   const router = useRouter();
   const [switching, start] = useTransition();
   const dict = DICTS[locale];
@@ -31,6 +37,13 @@ export function I18nProvider({ locale, children }: { locale: Locale; children: R
     },
     [router],
   );
+  const setCurrency = useCallback(
+    (c: Currency) => {
+      document.cookie = `${CURRENCY_COOKIE}=${c}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+      start(() => router.refresh());
+    },
+    [router],
+  );
 
   const value = useMemo<Ctx>(
     () => ({
@@ -38,12 +51,15 @@ export function I18nProvider({ locale, children }: { locale: Locale; children: R
       dict,
       t: (k, v) => translate(dict, k, v),
       tm: (m, v) => translateMessage(dict, m, v),
-      money: (n) => formatMoney(n, locale),
+      ...makeMoney(locale, currency, bdtPerUsd),
       num: (n) => formatNumber(n, locale),
       setLocale,
+      currency,
+      bdtPerUsd,
+      setCurrency,
       switching,
     }),
-    [locale, dict, setLocale, switching],
+    [locale, dict, setLocale, switching, currency, bdtPerUsd, setCurrency],
   );
   return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
 }

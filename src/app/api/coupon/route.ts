@@ -9,7 +9,7 @@ import { getI18n } from "@/lib/i18n/server";
 import { localizeCouponError, localizeCouponLabel } from "@/lib/i18n/coupon";
 
 export async function POST(req: Request) {
-  const { t, money, num } = await getI18n();
+  const { t, bdt: money, num } = await getI18n();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   if (!rateLimit(`coupon:${ip}`, 10, 60_000).ok) {
     return NextResponse.json({ error: t("err.rate") }, { status: 429 });

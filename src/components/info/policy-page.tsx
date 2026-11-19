@@ -14,7 +14,7 @@ export async function policyMetadata(slug: PolicySlug): Promise<Metadata> {
 
 /** Shared layout for the four policy pages, with a side nav between them. */
 export async function PolicyPage({ slug }: { slug: PolicySlug }) {
-  const { locale, t, money } = await getI18n();
+  const { locale, t, bdt: money } = await getI18n();
   const c = POLICIES[slug][locale];
   const updated = new Date(STORE.policiesUpdated).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
   const zones = slug === "shipping-policy" ? await getZones() : [];

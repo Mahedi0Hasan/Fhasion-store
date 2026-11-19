@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { ActionMsg, btn, btnGhost, field } from "@/components/admin/ui";
-import { createCoupon, saveCategory, saveZone } from "./manage-actions";
+import { createCoupon, saveCategory, saveUsdRate, saveZone } from "./manage-actions";
 
 export function CategoryForm({ c }: { c?: { id: string; name: string; name_bn?: string | null; slug: string; sort: number; is_active: boolean } }) {
   const [state, action, pending] = useActionState(saveCategory, {});
@@ -58,4 +58,15 @@ export function ZoneForm({ z }: { z: { id: string; label: string; fee_bdt: numbe
 
 function L({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="mb-1.5 block text-xs text-stone">{label}</span>{children}</label>;
+}
+
+export function UsdRateForm({ rate }: { rate: number | null }) {
+  const [state, action, pending] = useActionState(saveUsdRate, {});
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-3">
+      <L label="Taka per 1 US$"><input name="bdt_per_usd" type="number" step="0.01" min={50} max={500} required defaultValue={rate ?? ""} className={`${field} w-36`} /></L>
+      <button disabled={pending} className={btnGhost}>{pending ? "…" : "Save rate"}</button>
+      <div className="basis-full"><ActionMsg state={state} /></div>
+    </form>
+  );
 }

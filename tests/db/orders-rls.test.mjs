@@ -297,3 +297,30 @@ test("staff cancel restocks; staff can't change delivery fees, admin can", async
     assert.equal((await c.query("update shipping_zones set fee_bdt = 90 where id='dhaka' returning id")).rowCount, 1);
   }, admin);
 });
+
+// ───────────── store settings / USD rate ─────────────
+test("usd_rate: public can read, only admin can change, absurd values refused", async () => {
+  await as("anon", async (c) => {
+    assert.equal((await c.query("select (value->>'bdt_per_usd')::int r from store_settings where key='usd_rate'")).rows[0].r, 122);
+    assert.equal((await c.query("update store_settings set value='{\"bdt_per_usd\":1}' returning key")).rowCount, 0);
+  });
+  const staff = await makeUser("staff");
+  await as("authenticated", async (c) => {
+    assert.equal((await c.query("update store_settings set value='{\"bdt_per_usd\":130}' where key='usd_rate' returning key")).rowCount, 0);
+  }, staff);
+  const admin = await makeUser("admin");
+  await as("authenticated", async (c) => {
+    assert.equal((await c.query("update store_settings set value='{\"bdt_per_usd\":125}' where key='usd_rate' returning key")).rowCount, 1);
+    await rejects(c, () => c.query("update store_settings set value='{\"bdt_per_usd\":5}' where key='usd_rate'"), /usd_rate_sane/);
+  }, admin);
+});
+
+test("contact_messages: anon can't read or write; staff can read", async () => {
+  await service(async (c) => { await c.query("insert into contact_messages (name,email,topic,message) values ('Test','t@x.co','other','hello there, testing')"); });
+  await as("anon", async (c) => {
+    assert.equal((await c.query("select count(*)::int n from contact_messages")).rows[0].n, 0);
+    await rejects(c, () => c.query("insert into contact_messages (name,email,topic,message) values ('X','x@x.co','other','sneaky direct insert')"), /row-level security/);
+  });
+  const staff = await makeUser("staff");
+  await as("authenticated", async (c) => { assert.ok((await c.query("select count(*)::int n from contact_messages")).rows[0].n >= 1); }, staff);
+});

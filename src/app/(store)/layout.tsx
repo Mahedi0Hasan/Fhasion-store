@@ -8,10 +8,10 @@ import { getI18n } from "@/lib/i18n/server";
 import { getLocalizedCatalog } from "@/lib/catalog-source";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const { locale, t } = await getI18n();
+  const { locale, t, currency, bdtPerUsd } = await getI18n();
   const { products, zones } = await getLocalizedCatalog(locale);
   return (
-    <I18nProvider locale={locale}>
+    <I18nProvider locale={locale} currency={currency} bdtPerUsd={bdtPerUsd}>
       <StoreProvider products={products} zones={zones}>
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-ivory">
           {t("nav.skip")}

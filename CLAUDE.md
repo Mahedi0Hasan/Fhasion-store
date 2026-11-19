@@ -45,8 +45,9 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (tokens in 
   - Never split Bengali text into letters for animation (breaks conjuncts). Hero animates the whole word in Bangla.
   - Validation messages are dictionary keys (`err.*`); API routes answer in the shopper's language.
 - [x] Info pages (2026-11-19): about, contact (form → `contact_messages`, migration 0006, admin `/admin/messages`), faq (dynamic payment answer + FAQPage JSON-LD), 4 policies via `components/info/policy-page.tsx` (shipping table reads live zones). Content in `src/content/pages.ts` (EN+BN). Store contact details from `NEXT_PUBLIC_STORE_*` env, hidden when unset. `sitemap.ts`, `robots.ts`. Info flow test: 37 checks passing.
-- [ ] USD price toggle on the storefront (checkout already shows a USD reference when `BDT_PER_USD` is set)
+- [x] Currency switch (2026-11-19): `cur` cookie, `store_settings.usd_rate` (migration 0007, public read, admin write, 50–500 bounds), env `BDT_PER_USD` fallback, hidden when no rate. `money()` = display currency; `bdt()` = always taka. Use `bdt()` for anything charged/recorded (checkout, confirmation, tracking, coupon/API messages, policy fee table). USD is formatted by hand (`US$ ১১৮.৮৫` / `$118.85`) because ICU's bn currency layout differs between Node and browsers and would break hydration.
+- Never run `next dev` in the same folder as a running `next start`; it overwrites `.next`.
 
 ## Testing
-- `npm run test:db`: 22 SQL tests (RLS, pricing, coupons, stock, concurrency, webhooks, tracking) against a throwaway Postgres with `supabase/tests/00_supabase_shim.sql`. Env: `TEST_PG_HOST`, `TEST_PG_PORT`.
+- `npm run test:db`: 24 SQL tests (RLS, pricing, coupons, stock, concurrency, webhooks, tracking) against a throwaway Postgres with `supabase/tests/00_supabase_shim.sql`. Env: `TEST_PG_HOST`, `TEST_PG_PORT`.
 - The end-to-end browser suite was run against Postgres + PostgREST locally (24 checks, all passing on 2026-11-19). Admin flow tested against real Supabase Auth (GoTrue v2.177) + PostgREST: 30 checks passing. Bangla flow: 27 checks passing (2026-11-19).

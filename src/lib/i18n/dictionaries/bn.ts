@@ -20,7 +20,7 @@ export const bn: Dict = {
     women: "নারী", men: "পুরুষ", kids: "শিশু", newArrivals: "নতুন এসেছে", bags: "ব্যাগ ও অ্যাক্সেসরিজ",
     contact: "যোগাযোগ", faq: "সাধারণ প্রশ্ন", shipping: "শিপিং নীতি", returns: "রিটার্ন ও রিফান্ড", track: "অর্ডার ট্র্যাক করুন",
     about: "DEMO সম্পর্কে", privacy: "গোপনীয়তা নীতি", terms: "শর্তাবলি",
-    rights: "সর্বস্বত্ব সংরক্ষিত।", prices: "দাম টাকায় · আন্তর্জাতিক অর্ডারে চেকআউটে ডলারও দেখানো হয়",
+    rights: "সর্বস্বত্ব সংরক্ষিত।", prices: "দাম বাংলাদেশি টাকায় · ডলারের দাম আনুমানিক, পেমেন্ট সবসময় টাকায়",
   },
   hero: {
     aria: "বাছাই করা পণ্য", new: "নতুন", choose: "একটি পণ্য বেছে নিন", shopNow: "এখনই কিনুন",
@@ -164,6 +164,11 @@ export const bn: Dict = {
       "Order received — we will call to confirm.": "অর্ডার পেয়েছি, নিশ্চিত করতে ফোন করব।",
       "Awaiting payment.": "পেমেন্টের অপেক্ষায়।", "Payment received.": "পেমেন্ট পাওয়া গেছে।",
     },
+  },
+  currency: {
+    label: "মুদ্রা", bdt: "টাকা", usd: "ডলার", switchLabel: "দাম {c}-এ দেখুন",
+    chargedIn: "চেকআউটে টাকায় চার্জ হবে: {amount}",
+    pdpNote: "আনুমানিক, ১ US$ = {rate} ধরে। আপনাকে চার্জ করা হবে {amount}।",
   },
   info: {
     updated: "সর্বশেষ হালনাগাদ {date}", zonesCaption: "এলাকা অনুযায়ী ডেলিভারি খরচ", zone: "এলাকা", fee: "ডেলিভারি খরচ", freeOver: "ফ্রি ডেলিভারি", time: "ডেলিভারির সময়",

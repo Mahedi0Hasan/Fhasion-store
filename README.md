@@ -94,9 +94,14 @@ Until step 3 is done, the site still works for browsing. Checkout shows a clear 
 - **SEO**: `/sitemap.xml` (products, categories, info pages) and `/robots.txt` (keeps out admin, checkout, cart and API).
 - ⚠️ **The policies are a starting template.** They describe how this store works (guest checkout, cash on delivery, 7-day returns, the data collected), but have them reviewed by someone who knows Bangladeshi consumer law before launch.
 
+## Currency: ৳ BDT ⇄ $ USD (display only)
+
+- A ৳/$ switch in the header (and in the mobile menu) shows prices in US dollars. The choice is remembered.
+- **Payment is always in taka.** In USD mode, the bag shows "Charged in taka at checkout: ৳ …", product pages note the exact taka amount, and checkout, the order confirmation and order tracking always show BDT. The order is stored and charged in BDT.
+- The rate is set by an admin under **Admin → Settings → USD display rate**. Updates take effect immediately, and values outside ৳50–500 are refused. If no rate is set in the database, `BDT_PER_USD` is used instead; if neither exists, the switch is hidden.
+
 ## Not yet built
 
-- A BDT/USD price switcher on the storefront
 - bKash and Nagad: need merchant accounts and sandbox verification
 - Pathao and Steadfast booking from the dashboard: needs courier API keys and verification
 - Phase 8: Vercel deployment

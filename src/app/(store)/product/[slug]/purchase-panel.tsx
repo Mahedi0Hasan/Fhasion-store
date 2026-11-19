@@ -11,7 +11,7 @@ import { WishButton } from "@/components/products/wish-button";
 
 export function PurchasePanel({ product }: { product: Product }) {
   const { add, openDrawer } = useStore();
-  const { t, money: formatBDT, num } = useI18n();
+  const { t, money: formatBDT, num, currency, bdt, bdtPerUsd } = useI18n();
   const sizes = Object.keys(product.stock);
   const [size, setSize] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
@@ -54,6 +54,9 @@ export function PurchasePanel({ product }: { product: Product }) {
           <span className="font-serif text-3xl text-ink">{formatBDT(product.priceBDT)}</span>
         )}
       </div>
+      {currency === "USD" && bdtPerUsd && (
+        <p className="mt-2 text-xs text-stone">{t("currency.pdpNote", { rate: bdt(bdtPerUsd), amount: bdt(product.salePriceBDT ?? product.priceBDT) })}</p>
+      )}
       <p className="mt-6 leading-relaxed text-stone">{product.description}</p>
 
       {/* Colour (single colourway per product in the demo catalogue) */}

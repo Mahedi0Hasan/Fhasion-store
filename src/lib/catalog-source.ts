@@ -70,31 +70,43 @@ function toProduct(r: Row): Product {
 }
 
 export type Zone = { id: string; label: string; feeBDT: number; freeOverBDT?: number; eta: string };
-type Catalog = { products: Product[]; categories: Category[]; zones: Zone[]; source: "db" | "demo" };
+export type UsdRate = { bdtPerUsd: number; updatedAt: string | null } | null;
+type Catalog = { products: Product[]; categories: Category[]; zones: Zone[]; usd: UsdRate; source: "db" | "demo" };
+
+/** Fallback when no database setting exists: BDT_PER_USD env var (display only). */
+function envRate(): UsdRate {
+  const n = Number(process.env.BDT_PER_USD);
+  return Number.isFinite(n) && n >= 50 && n <= 500 ? { bdtPerUsd: n, updatedAt: null } : null;
+}
 const STATIC_ZONES: Zone[] = SHIPPING_ZONES.map((z) => ({ id: z.id, label: z.label, feeBDT: z.feeBDT, freeOverBDT: z.freeOverBDT, eta: z.eta }));
 
 const fetchCatalog = unstable_cache(
   async (): Promise<Catalog> => {
     const db = anonClient();
-    if (!db) return { products: DEMO_PRODUCTS, categories: DEMO_CATEGORIES, zones: STATIC_ZONES, source: "demo" };
-    const [p, c, z] = await Promise.all([
+    if (!db) return { products: DEMO_PRODUCTS, categories: DEMO_CATEGORIES, zones: STATIC_ZONES, usd: envRate(), source: "demo" };
+    const [p, c, z, s] = await Promise.all([
       db.from("products").select(
         "id,legacy_id,slug,name,description,details,name_bn,colour_bn,description_bn,details_bn,gender,colour,colour_hex,price_bdt,sale_price_bdt,is_new,is_bestseller,popularity,created_at," +
           "category:categories(slug),product_images(src,alt,fit,object_position,sort),product_variants(size,is_active,inventory(quantity))",
       ).eq("is_active", true).order("created_at", { ascending: false }),
       db.from("categories").select("slug,name,name_bn").eq("is_active", true).order("sort"),
       db.from("shipping_zones").select("id,label,fee_bdt,free_over_bdt,eta").eq("is_active", true).order("sort"),
+      db.from("store_settings").select("value,updated_at").eq("key", "usd_rate").maybeSingle(),
     ]);
+    const dbRate = Number((s.data?.value as { bdt_per_usd?: number } | undefined)?.bdt_per_usd);
+    // A missing table (migration not run yet) just means "use the env fallback".
+    const usd: UsdRate = Number.isFinite(dbRate) && dbRate > 0 ? { bdtPerUsd: dbRate, updatedAt: s.data?.updated_at ?? null } : envRate();
     if (p.error || c.error || z.error) throw new Error(`Catalogue fetch failed: ${p.error?.message ?? c.error?.message ?? z.error?.message}`);
     return {
       products: (p.data as unknown as Row[]).map(toProduct),
       categories: (c.data as { slug: string; name: string; name_bn: string | null }[]).map((x) => ({ slug: x.slug, name: x.name, nameBn: x.name_bn ?? undefined })),
       // Fees come from the database so the cart estimate always matches what checkout charges.
       zones: (z.data as { id: string; label: string; fee_bdt: number; free_over_bdt: number | null; eta: string }[]).map((x) => ({ id: x.id, label: x.label, feeBDT: x.fee_bdt, freeOverBDT: x.free_over_bdt ?? undefined, eta: x.eta })),
+      usd,
       source: "db",
     };
   },
-  ["catalog-v2"],
+  ["catalog-v3"],
   { tags: [CATALOG_TAG], revalidate: 120 },
 );
 
@@ -110,3 +122,4 @@ export async function getLocalizedCatalog(locale: Locale) {
   return { ...c, products: c.products.map((p) => localizeProduct(p, locale)), categories: c.categories.map((x) => localizeCategory(x, locale)) };
 }
 export async function getZones() { return (await fetchCatalog()).zones; }
+export async function getUsdRate() { return (await fetchCatalog()).usd; }

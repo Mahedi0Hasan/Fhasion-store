@@ -18,7 +18,7 @@ export const en = {
     women: "Women", men: "Men", kids: "Kids", newArrivals: "New arrivals", bags: "Bags & accessories",
     contact: "Contact", faq: "FAQ", shipping: "Shipping policy", returns: "Returns & refunds", track: "Track an order",
     about: "About DEMO", privacy: "Privacy policy", terms: "Terms & conditions",
-    rights: "All rights reserved.", prices: "Prices in BDT · USD shown at checkout for international orders",
+    rights: "All rights reserved.", prices: "Prices in Bangladeshi taka · USD prices are estimates; payment is always in BDT",
   },
   hero: {
     aria: "Featured pieces", new: "New", choose: "Choose a piece", shopNow: "Shop now",
@@ -163,6 +163,11 @@ export const en = {
       "Order received — we will call to confirm.": "Order received — we will call to confirm.",
       "Awaiting payment.": "Awaiting payment.", "Payment received.": "Payment received.",
     } as Record<string, string>,
+  },
+  currency: {
+    label: "Currency", bdt: "BDT", usd: "USD", switchLabel: "Show prices in {c}",
+    chargedIn: "Charged in taka at checkout: {amount}",
+    pdpNote: "Estimate at 1 US$ = {rate}. You'll be charged {amount}.",
   },
   info: {
     updated: "Last updated {date}", zonesCaption: "Delivery fees by area", zone: "Area", fee: "Delivery fee", freeOver: "Free over", time: "Delivery time",

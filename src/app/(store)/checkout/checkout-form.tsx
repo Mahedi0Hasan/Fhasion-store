@@ -15,10 +15,10 @@ import { useI18n } from "@/lib/i18n/client";
 import { checkoutSchema, zoneFor, type CheckoutInput } from "@/lib/validation/checkout";
 import type { PaymentOption } from "@/lib/payments";
 
-export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; payments: PaymentOption[]; usdRate: number | null }) {
+export function CheckoutForm({ ready, payments }: { ready: boolean; payments: PaymentOption[] }) {
   const { lines, subtotal, coupon, hydrated, clear, zones } = useStore();
   const [serverError, setServerError] = useState<string | null>(null);
-  const { t, tm, money: formatBDT, num, locale } = useI18n();
+  const { t, tm, bdt: formatBDT, num, locale, currency, bdtPerUsd } = useI18n();
   const zLabel = (id: string, fallback: string) => { const v = t(`zones.${id}.label`); return v.startsWith("zones.") ? fallback : v; };
   const countryName = (code: string, fallback: string) => {
     try { return new Intl.DisplayNames([locale], { type: "region" }).of(code) ?? fallback; } catch { return fallback; }
@@ -220,8 +220,8 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
               <dt className="font-medium">{t("checkout.total")}</dt>
               <dd className="font-serif text-3xl">{formatBDT(total)}</dd>
             </div>
-            {!isBD && usdRate && (
-              <p className="text-right text-xs text-stone">{t("checkout.usdRef", { usd: (total / usdRate).toFixed(2) })}</p>
+            {(!isBD || currency === "USD") && bdtPerUsd && (
+              <p className="text-right text-xs text-stone">{t("checkout.usdRef", { usd: (total / bdtPerUsd).toFixed(2) })}</p>
             )}
           </dl>
 

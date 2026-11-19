@@ -13,7 +13,7 @@ const input = "h-12 w-full rounded-[2px] border border-ink/15 bg-ivory/60 px-4 t
 
 export function TrackForm() {
   const [state, action, pending] = useActionState<TrackState, FormData>(trackOrder, {});
-  const { t, money: formatBDT, locale, dict } = useI18n();
+  const { t, bdt: formatBDT, locale, dict } = useI18n();
   const LABEL = (s: string) => t(`track.status.${s}`);
   const note = (n: string) => dict.track.notes[n] ?? n; // keys are full sentences, so no dotted lookup
   const dateLocale = locale === "bn" ? "bn-BD" : "en-GB";

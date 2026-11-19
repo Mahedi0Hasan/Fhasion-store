@@ -14,7 +14,6 @@ export const dynamic = "force-dynamic";
 export default async function CheckoutPage() {
   const { t } = await getI18n();
   const ready = isDbConfigured() && hasOrderTokenSecret();
-  const usdRate = Number(process.env.BDT_PER_USD) || null;
   return (
     <div className="container-x py-12 md:py-16">
       <h1 className="font-serif text-5xl text-ink md:text-7xl">{t("checkout.title")}</h1>
@@ -23,7 +22,7 @@ export default async function CheckoutPage() {
           {t("checkout.notReady")}
         </p>
       )}
-      <CheckoutForm ready={ready} payments={paymentOptions()} usdRate={usdRate} />
+      <CheckoutForm ready={ready} payments={paymentOptions()} />
     </div>
   );
 }

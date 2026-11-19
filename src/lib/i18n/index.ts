@@ -32,3 +32,22 @@ export function translateMessage(dict: Dict, msg: string | undefined, vars?: Rec
   if (!msg) return "";
   return msg.startsWith("err.") ? translate(dict, msg, vars) : msg;
 }
+
+/* ───────────── currency (display only) ───────────── */
+export type Currency = "BDT" | "USD";
+export const CURRENCY_COOKIE = "cur";
+export const isCurrency = (v: unknown): v is Currency => v === "BDT" || v === "USD";
+
+/** Convert a BDT amount for DISPLAY. Payments are always charged in BDT. */
+export function formatUsdFromBdt(bdt: number, bdtPerUsd: number, locale: Locale) {
+  // Built by hand: ICU's currency layout for bn differs between Node and browsers,
+  // which would make server and client render different text.
+  const n = new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(bdt / bdtPerUsd);
+  return locale === "bn" ? `US$ ${n}` : `$${n}`;
+}
+
+export function makeMoney(locale: Locale, currency: Currency, bdtPerUsd: number | null) {
+  const bdt = (n: number) => formatMoney(n, locale);
+  const money = currency === "USD" && bdtPerUsd ? (n: number) => formatUsdFromBdt(n, bdtPerUsd, locale) : bdt;
+  return { money, bdt };
+}

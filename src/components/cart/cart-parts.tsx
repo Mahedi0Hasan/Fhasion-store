@@ -106,7 +106,7 @@ export function CouponForm() {
 
 export function CartSummary({ showZones = true }: { showZones?: boolean }) {
   const { subtotal, coupon, closeDrawer, zones } = useStore();
-  const { t, money: formatBDT } = useI18n();
+  const { t, money: formatBDT, bdt, currency } = useI18n();
   const [zone, setZone] = useState("dhaka");
   const discount = coupon?.discountBDT ?? 0;
   const z = zones.find((s) => s.id === zone) ?? zones[0];
@@ -138,6 +138,7 @@ export function CartSummary({ showZones = true }: { showZones?: boolean }) {
           <dt className="font-medium text-ink">{t("cart.estTotal")}</dt>
           <dd className="font-serif text-2xl text-ink">{formatBDT(total)}</dd>
         </div>
+        {currency === "USD" && <p className="text-right text-[0.7rem] text-stone">{t("currency.chargedIn", { amount: bdt(total) })}</p>}
       </dl>
       {z?.freeOverBDT !== undefined && subtotal - discount < z.freeOverBDT && (
         <p className="text-xs text-stone">{t("cart.addMore", { amount: formatBDT(z.freeOverBDT - (subtotal - discount)), zone: t(`zones.${z.id}.inLabel`) })}</p>

@@ -94,3 +94,17 @@ export async function saveZone(_p: State, fd: FormData): Promise<State> {
   revalidatePath("/admin/settings");
   return { ok: "Saved. Checkout uses the new fee for all new orders." };
 }
+
+/* ───────────── USD display rate (admin only) ───────────── */
+export async function saveUsdRate(_p: State, fd: FormData): Promise<State> {
+  await requireAdmin();
+  const v = z.coerce.number().min(50, "Rate looks too low.").max(500, "Rate looks too high.").safeParse(fd.get("bdt_per_usd"));
+  if (!v.success) return { error: v.error.issues[0].message };
+  const rate = Math.round(v.data * 100) / 100;
+  const db = await userClient();
+  const { data, error } = await db.from("store_settings").upsert({ key: "usd_rate", value: { bdt_per_usd: rate }, is_public: true }).select("key");
+  if (error) return fail(error);
+  if (!data?.length) return { error: "You don't have permission to do that." };
+  revalidateTag(CATALOG_TAG);
+  return { ok: `Saved: 1 US$ = ৳ ${rate}. Storefront USD prices update now.` };
+}

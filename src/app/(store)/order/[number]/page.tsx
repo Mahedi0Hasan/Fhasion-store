@@ -16,7 +16,7 @@ type Props = { params: Promise<{ number: string }>; searchParams: Promise<{ t?: 
 export default async function OrderPage({ params, searchParams }: Props) {
   const { number } = await params;
   const { t: token, cancelled } = await searchParams;
-  const { t, money: formatBDT } = await getI18n();
+  const { t, bdt: formatBDT } = await getI18n();
   if (!isDbConfigured() || !hasOrderTokenSecret() || !/^DM-\d{6}-[0-9A-F]{6}$/.test(number) || !verifyOrder(number, token)) notFound();
 
   const { data: o } = await serviceClient()

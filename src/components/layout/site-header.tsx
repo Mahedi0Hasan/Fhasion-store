@@ -99,6 +99,7 @@ export function SiteHeader() {
 
           {/* Right */}
           <div className="flex items-center justify-end gap-0.5 md:gap-1.5">
+            <CurrencySwitch className="hidden sm:inline-flex" />
             <LangSwitch className="inline-flex h-10 items-center rounded-full px-2 text-[0.75rem] font-medium tracking-wide transition-colors hover:bg-sand sm:px-3 sm:text-[0.78rem]" />
             <IconLink href="/shop#search" label={t("nav.search")}><Search className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
             <IconLink href="/wishlist" label={t("nav.wishlist", { n: wishlist.length })} className="hidden sm:grid">
@@ -164,6 +165,7 @@ export function SiteHeader() {
                 <Link href="/track-order" className="block">{t("nav.track")}</Link>
                 <Link href="/wishlist" className="block">{t("nav.wishlistLink")}</Link>
                 <Link href="/contact" className="block">{t("nav.contact")}</Link>
+                <div className="flex items-center justify-between pt-2"><span>{t("currency.label")}</span><CurrencySwitch className="inline-flex" /></div>
               </div>
             </motion.aside>
           </>
@@ -220,5 +222,28 @@ export function LangSwitch({ className = "" }: { className?: string }) {
       <span className="sm:hidden">{t("lang.short")}</span>
       <span className="hidden sm:inline">{t("lang.switchTo")}</span>
     </button>
+  );
+}
+
+/** ৳ / $ toggle. Display only: checkout always charges BDT. Hidden when no rate is configured. */
+export function CurrencySwitch({ className = "" }: { className?: string }) {
+  const { currency, setCurrency, bdtPerUsd, t, switching } = useI18n();
+  if (!bdtPerUsd) return null;
+  return (
+    <div role="group" aria-label={t("currency.label")} className={`${className} items-center rounded-full border border-ink/15 p-0.5 text-[0.72rem] font-medium`}>
+      {(["BDT", "USD"] as const).map((c) => (
+        <button
+          key={c}
+          type="button"
+          disabled={switching}
+          aria-pressed={currency === c}
+          aria-label={t("currency.switchLabel", { c: t(`currency.${c.toLowerCase()}`) })}
+          onClick={() => currency !== c && setCurrency(c)}
+          className={`h-8 min-w-9 rounded-full px-2.5 transition-colors ${currency === c ? "bg-ink text-ivory" : "text-ink hover:bg-sand"}`}
+        >
+          {c === "BDT" ? "৳" : "$"}
+        </button>
+      ))}
+    </div>
   );
 }
