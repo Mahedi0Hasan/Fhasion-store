@@ -17,3 +17,11 @@ export function shippingFor(zoneId: ShippingZoneId, subtotalBDT: number) {
   if (z.freeOverBDT !== undefined && subtotalBDT >= z.freeOverBDT) return 0;
   return z.feeBDT;
 }
+
+export type ZoneInfo = { id: string; label: string; feeBDT: number; freeOverBDT?: number; eta: string };
+/** Same rule as the SQL place_order function. */
+export function feeFor(zone: ZoneInfo | undefined, subtotalBDT: number) {
+  if (!zone || subtotalBDT <= 0) return 0;
+  if (zone.freeOverBDT !== undefined && subtotalBDT >= zone.freeOverBDT) return 0;
+  return zone.feeBDT;
+}

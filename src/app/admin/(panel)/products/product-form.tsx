@@ -7,6 +7,7 @@ import { saveProduct } from "./actions";
 export type ProductValues = {
   id?: string; name: string; slug: string; category_id: string; gender: string; colour: string; colour_hex: string;
   price_bdt: number | ""; sale_price_bdt: number | null | ""; description: string; details: string[];
+  name_bn?: string | null; colour_bn?: string | null; description_bn?: string | null; details_bn?: string[] | null;
   is_active: boolean; is_new: boolean; is_bestseller: boolean;
 };
 
@@ -36,6 +37,13 @@ export function ProductForm({ values, categories }: { values: ProductValues; cat
       <L label="Sale price (optional)"><input name="sale_price_bdt" type="number" min={1} step={1} defaultValue={values.sale_price_bdt ?? ""} className={field} /></L>
       <L label="Description" className="sm:col-span-2"><textarea name="description" rows={4} defaultValue={values.description} className={`${field} h-auto py-2`} /></L>
       <L label="Details & care (one per line)" className="sm:col-span-2"><textarea name="details" rows={4} defaultValue={values.details.join("\n")} className={`${field} h-auto py-2`} /></L>
+      <fieldset className="grid gap-4 rounded-[2px] border border-line p-4 sm:col-span-2 sm:grid-cols-2" lang="bn">
+        <legend className="px-1 text-xs font-medium text-ink">বাংলা (optional, leave blank to show English)</legend>
+        <L label="নাম (Name in Bangla)"><input name="name_bn" defaultValue={values.name_bn ?? ""} className={field} /></L>
+        <L label="রং (Colour in Bangla)"><input name="colour_bn" defaultValue={values.colour_bn ?? ""} className={field} /></L>
+        <L label="বিবরণ (Description)" className="sm:col-span-2"><textarea name="description_bn" rows={3} defaultValue={values.description_bn ?? ""} className={`${field} h-auto py-2`} /></L>
+        <L label="বিস্তারিত ও যত্ন (one per line)" className="sm:col-span-2"><textarea name="details_bn" rows={3} defaultValue={(values.details_bn ?? []).join("\n")} className={`${field} h-auto py-2`} /></L>
+      </fieldset>
       <div className="flex flex-wrap gap-5 sm:col-span-2">
         <Check name="is_active" label="Visible in store" checked={values.is_active} />
         <Check name="is_new" label="New arrival" checked={values.is_new} />

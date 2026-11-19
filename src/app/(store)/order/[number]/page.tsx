@@ -2,19 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
-import { formatBDT } from "@/lib/catalog";
+import { getI18n } from "@/lib/i18n/server";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 import { hasOrderTokenSecret, verifyOrder } from "@/lib/order-token";
 
-export const metadata: Metadata = { title: "Your order", robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t("order.meta"), robots: { index: false, follow: false } };
+}
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ number: string }>; searchParams: Promise<{ t?: string; cancelled?: string }> };
 
 export default async function OrderPage({ params, searchParams }: Props) {
   const { number } = await params;
-  const { t, cancelled } = await searchParams;
-  if (!isDbConfigured() || !hasOrderTokenSecret() || !/^DM-\d{6}-[0-9A-F]{6}$/.test(number) || !verifyOrder(number, t)) notFound();
+  const { t: token, cancelled } = await searchParams;
+  const { t, money: formatBDT } = await getI18n();
+  if (!isDbConfigured() || !hasOrderTokenSecret() || !/^DM-\d{6}-[0-9A-F]{6}$/.test(number) || !verifyOrder(number, token)) notFound();
 
   const { data: o } = await serviceClient()
     .from("orders")
@@ -27,12 +30,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const isCod = o.payment_method === "cod";
   const failed = o.status === "cancelled" || cancelled === "1";
   const state = failed && !paid
-    ? { Icon: XCircle, title: "Payment not completed", body: "Your payment wasn't completed, so this order hasn't gone through. Nothing was charged. You can return to the shop and try again." }
+    ? { Icon: XCircle, title: t("order.failedTitle"), body: t("order.failedBody") }
     : isCod
-      ? { Icon: CheckCircle2, title: "Thank you, your order is in.", body: "We'll call you shortly to confirm, then pass it to the courier. Pay in cash on delivery." }
+      ? { Icon: CheckCircle2, title: t("order.codTitle"), body: t("order.codBody") }
       : paid
-        ? { Icon: CheckCircle2, title: "Thank you, payment received.", body: "Your order is confirmed. We'll email you when it ships." }
-        : { Icon: Clock, title: "Confirming your payment…", body: "This usually takes a few seconds. Refresh the page in a moment. You'll also get an email once it's confirmed." };
+        ? { Icon: CheckCircle2, title: t("order.paidTitle"), body: t("order.paidBody") }
+        : { Icon: Clock, title: t("order.waitTitle"), body: t("order.waitBody") };
 
   return (
     <div className="container-x max-w-4xl py-14 md:py-20">
@@ -42,10 +45,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
 
       <div className="mt-10 grid gap-8 rounded-[2px] bg-ivory p-6 md:grid-cols-2 md:p-8">
         <div>
-          <p className="label text-stone">Order number</p>
+          <p className="label text-stone">{t("order.number")}</p>
           <p className="mt-1 font-serif text-3xl tracking-wide text-ink">{o.order_number}</p>
-          <p className="mt-1 text-xs text-stone">Keep this with your phone number to track your order.</p>
-          <p className="label mt-6 text-stone">Delivering to</p>
+          <p className="mt-1 text-xs text-stone">{t("order.keep")}</p>
+          <p className="label mt-6 text-stone">{t("order.deliveringTo")}</p>
           <p className="mt-1 text-sm leading-relaxed text-ink">
             {o.customer_name}<br />
             {o.address_line1}{o.address_line2 ? `, ${o.address_line2}` : ""}<br />
@@ -63,17 +66,17 @@ export default async function OrderPage({ params, searchParams }: Props) {
             ))}
           </ul>
           <dl className="mt-3 space-y-1.5 border-t border-line pt-3 text-sm">
-            <div className="flex justify-between"><dt className="text-stone">Subtotal</dt><dd>{formatBDT(o.subtotal_bdt)}</dd></div>
-            {o.discount_bdt > 0 && <div className="flex justify-between"><dt className="text-stone">Discount ({o.coupon_code})</dt><dd className="text-clay">− {formatBDT(o.discount_bdt)}</dd></div>}
-            <div className="flex justify-between"><dt className="text-stone">Delivery</dt><dd>{o.shipping_bdt === 0 ? "Free" : formatBDT(o.shipping_bdt)}</dd></div>
-            <div className="flex items-baseline justify-between border-t border-line pt-2"><dt className="font-medium">Total</dt><dd className="font-serif text-2xl">{formatBDT(o.total_bdt)}</dd></div>
+            <div className="flex justify-between"><dt className="text-stone">{t("cart.subtotal")}</dt><dd>{formatBDT(o.subtotal_bdt)}</dd></div>
+            {o.discount_bdt > 0 && <div className="flex justify-between"><dt className="text-stone">{t("cart.discount", { code: o.coupon_code })}</dt><dd className="text-clay">− {formatBDT(o.discount_bdt)}</dd></div>}
+            <div className="flex justify-between"><dt className="text-stone">{t("checkout.delivery")}</dt><dd>{o.shipping_bdt === 0 ? t("cart.free") : formatBDT(o.shipping_bdt)}</dd></div>
+            <div className="flex items-baseline justify-between border-t border-line pt-2"><dt className="font-medium">{t("checkout.total")}</dt><dd className="font-serif text-2xl">{formatBDT(o.total_bdt)}</dd></div>
           </dl>
         </div>
       </div>
 
       <div className="mt-10 flex flex-wrap gap-3">
-        <Link href="/track-order" className="inline-flex h-12 items-center rounded-full bg-ink px-7 text-sm font-medium text-ivory">Track this order</Link>
-        <Link href="/shop" className="inline-flex h-12 items-center rounded-full border border-ink/20 px-7 text-sm font-medium text-ink hover:border-ink">Continue shopping</Link>
+        <Link href="/track-order" className="inline-flex h-12 items-center rounded-full bg-ink px-7 text-sm font-medium text-ivory">{t("order.track")}</Link>
+        <Link href="/shop" className="inline-flex h-12 items-center rounded-full border border-ink/20 px-7 text-sm font-medium text-ink hover:border-ink">{t("cart.continue")}</Link>
       </div>
     </div>
   );

@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { priceOf, type Product } from "@/lib/catalog";
+import type { ZoneInfo } from "@/lib/shipping/zones";
+import { useI18n } from "@/lib/i18n/client";
 
 export type CartLine = { productId: string; size: string; qty: number };
 export type ResolvedLine = CartLine & { product: Product; unitPrice: number; lineTotal: number; available: number };
@@ -23,6 +25,7 @@ type StoreCtx = {
   setCoupon: (c: AppliedCoupon | null) => void;
   wishlist: string[];
   getProduct: (id: string) => Product | undefined;
+  zones: ZoneInfo[];
   toggleWish: (productId: string) => void;
   isWished: (productId: string) => boolean;
 };
@@ -65,7 +68,8 @@ function sanitize(raw: unknown, getProductById: (id: string) => Product | undefi
   return out;
 }
 
-export function StoreProvider({ products, children }: { products: Product[]; children: React.ReactNode }) {
+export function StoreProvider({ products, zones, children }: { products: Product[]; zones: ZoneInfo[]; children: React.ReactNode }) {
+  const { t, num } = useI18n();
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const getProductById = useCallback((id: string) => byId.get(id), [byId]);
   const [hydrated, setHydrated] = useState(false);
@@ -91,10 +95,10 @@ export function StoreProvider({ products, children }: { products: Product[]; chi
   const add = useCallback<StoreCtx["add"]>((productId, size, qty = 1) => {
     const p = getProductById(productId);
     const stock = p?.stock[size] ?? 0;
-    if (!p || stock <= 0) return { ok: false, message: "This size is sold out." };
+    if (!p || stock <= 0) return { ok: false, message: t("product.soldOut") };
     const limit = Math.min(stock, MAX_PER_LINE);
     const existing = cartRef.current.find((l) => l.productId === productId && l.size === size);
-    if (existing && existing.qty >= limit) return { ok: false, message: `Only ${limit} available in this size.` };
+    if (existing && existing.qty >= limit) return { ok: false, message: t("product.maxSize", { n: num(limit) }) };
     const nextQty = Math.min((existing?.qty ?? 0) + qty, limit);
     const next = existing
       ? cartRef.current.map((l) => (l === existing ? { ...l, qty: nextQty } : l))
@@ -103,7 +107,7 @@ export function StoreProvider({ products, children }: { products: Product[]; chi
     setCart(next);
     const result = { ok: true };
     return result;
-  }, [getProductById]);
+  }, [getProductById, t, num]);
 
   const setQty = useCallback((productId: string, size: string, qty: number) => {
     setCart((prev) =>
@@ -146,10 +150,11 @@ export function StoreProvider({ products, children }: { products: Product[]; chi
       setCoupon,
       wishlist,
       getProduct: getProductById,
+      zones,
       toggleWish,
       isWished: (id) => wishlist.includes(id),
     };
-  }, [cart, hydrated, add, setQty, remove, drawerOpen, openDrawer, closeDrawer, coupon, wishlist, toggleWish, getProductById]);
+  }, [cart, hydrated, add, setQty, remove, drawerOpen, openDrawer, closeDrawer, coupon, wishlist, toggleWish, getProductById, zones]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

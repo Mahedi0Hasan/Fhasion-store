@@ -39,6 +39,10 @@ const productSchema = z.object({
   sale_price_bdt: z.union([z.literal(""), int(1)]).optional(),
   description: z.string().trim().max(2000).default(""),
   details: z.string().max(2000).default(""),
+  name_bn: z.string().trim().max(160).default(""),
+  colour_bn: z.string().trim().max(60).default(""),
+  description_bn: z.string().trim().max(3000).default(""),
+  details_bn: z.string().max(3000).default(""),
   is_active: bool, is_new: bool, is_bestseller: bool,
 });
 
@@ -56,6 +60,8 @@ export async function saveProduct(_prev: State, fd: FormData): Promise<State> {
     name: v.name, slug: slugify(v.slug || v.name), category_id: v.category_id, gender: v.gender, colour: v.colour,
     colour_hex: v.colour_hex.toLowerCase(), price_bdt: v.price_bdt, sale_price_bdt: sale, description: v.description,
     details: v.details.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 20),
+    name_bn: v.name_bn || null, colour_bn: v.colour_bn || null, description_bn: v.description_bn || null,
+    details_bn: v.details_bn.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 20),
     is_active: v.is_active, is_new: v.is_new, is_bestseller: v.is_bestseller,
   };
   if (!row.slug) return { error: "Please give the product a name." };

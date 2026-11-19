@@ -7,9 +7,9 @@ export default function HomePage() {
     <>
       <Hero />
       <FeaturedCollections />
-      <ProductRail tag="new" eyebrow="Just landed" title="New arrivals" />
+      <ProductRail tag="new" />
       <PromoBanner />
-      <ProductRail tag="bestseller" eyebrow="Most loved" title="Best sellers" />
+      <ProductRail tag="bestseller" />
       <BrandStory />
       <Lookbook />
       <Newsletter />

@@ -43,7 +43,7 @@ No customer accounts: shoppers check out as guests and track orders with order n
 ## Connect Supabase (when you're ready)
 
 1. Create a project at supabase.com → **Project Settings → API**. Copy the URL, `anon` key and `service_role` key.
-2. **SQL Editor**: run the three files in `supabase/migrations/` in order, then `supabase/seed.sql`.
+2. **SQL Editor**: run every file in `supabase/migrations/` in order, then `supabase/seed.sql`.
 3. Create `.env.local` (and the same variables on Vercel):
    ```
    NEXT_PUBLIC_SITE_URL=https://your-domain
@@ -75,10 +75,18 @@ Until step 3 is done, the site still works for browsing. Checkout shows a clear 
 - **Products**: create and edit, sizes with SKU and stock, and photos (uploaded to the Supabase Storage bucket `product-images`, created by the migration; files are checked by content, not by name). Changes show in the store immediately.
 - **Also**: inventory, categories, coupons, customers (grouped by phone, since there are no accounts), sales reports (7 / 30 / 90 / 365 days), and settings for delivery fees (admins only).
 
+## Languages: English + বাংলা
+
+- A switch in the header (English ⇄ বাংলা) remembers the choice. Visitors whose browser prefers Bangla see Bangla first.
+- The whole storefront is translated: menus, product pages, cart, checkout (including error messages), order confirmation and tracking. Prices and counts use Bengali digits (৳ ১৪,৫০০).
+- Products can carry a Bangla name, colour, description and details. Fill them in on the product page in the dashboard. Anything left blank shows in English.
+- Search works in both languages ("কার্ডিগান" and "cardigan" find the same product).
+- The admin dashboard stays in English.
+
 ## Not yet built
 
 - Info pages: About, Contact, FAQ, Privacy, Terms, Shipping and Returns policies. Footer links to these 404 for now.
-- Bengali language and a BDT/USD price switcher on the storefront
+- A BDT/USD price switcher on the storefront
 - bKash and Nagad: need merchant accounts and sandbox verification
 - Pathao and Steadfast booking from the dashboard: needs courier API keys and verification
 - Phase 8: Vercel deployment

@@ -3,19 +3,24 @@ import { paymentOptions } from "@/lib/payments";
 import { isDbConfigured } from "@/lib/supabase/admin";
 import { hasOrderTokenSecret } from "@/lib/order-token";
 import { CheckoutForm } from "./checkout-form";
+import { getI18n } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("checkout.title"), robots: { index: false } };
+}
 export const dynamic = "force-dynamic";
 
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  const { t } = await getI18n();
   const ready = isDbConfigured() && hasOrderTokenSecret();
   const usdRate = Number(process.env.BDT_PER_USD) || null;
   return (
     <div className="container-x py-12 md:py-16">
-      <h1 className="font-serif text-5xl text-ink md:text-7xl">Checkout</h1>
+      <h1 className="font-serif text-5xl text-ink md:text-7xl">{t("checkout.title")}</h1>
       {!ready && (
         <p role="status" className="mt-6 max-w-2xl rounded-[2px] border border-clay/30 bg-clay/10 px-5 py-4 text-sm text-ink">
-          Online ordering is being connected. You can review your details below, but orders can&apos;t be placed just yet.
+          {t("checkout.notReady")}
         </p>
       )}
       <CheckoutForm ready={ready} payments={paymentOptions()} usdRate={usdRate} />

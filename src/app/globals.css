@@ -16,8 +16,8 @@
   --color-line: #e2d8c8;
 
   /* Type */
-  --font-serif: "Cormorant Garamond", "Times New Roman", serif;
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", "Noto Serif Bengali", "Times New Roman", serif;
+  --font-sans: "Inter Variable", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
 
   --text-display: clamp(3.25rem, 9vw, 8.5rem);
   --text-display--line-height: 0.92;
@@ -72,6 +72,30 @@
 @utility grain {
   background-image: radial-gradient(rgb(0 0 0 / 0.025) 1px, transparent 1px);
   background-size: 3px 3px;
+}
+
+/* Bengali script: vowel signs sit above and below the line, so it needs
+   more line-height, no negative tracking, and no all-caps letter-spacing. */
+:lang(bn) .font-serif,
+:lang(bn) h1,
+:lang(bn) h2 {
+  line-height: 1.22 !important;
+  letter-spacing: 0 !important;
+}
+:lang(bn) .label {
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+}
+:lang(bn) [class*="tracking-"],
+:lang(bn) .uppercase {
+  /* Wide tracking pulls Bengali letters apart; Latin wordmarks opt out with lang="en". */
+  letter-spacing: 0.01em !important;
+}
+:lang(bn) body {
+  line-height: 1.7;
+}
+:lang(bn) .font-serif {
+  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {

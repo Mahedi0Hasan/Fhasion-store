@@ -4,17 +4,18 @@ import { useActionState } from "react";
 import { ActionMsg, btn, btnGhost, field } from "@/components/admin/ui";
 import { createCoupon, saveCategory, saveZone } from "./manage-actions";
 
-export function CategoryForm({ c }: { c?: { id: string; name: string; slug: string; sort: number; is_active: boolean } }) {
+export function CategoryForm({ c }: { c?: { id: string; name: string; name_bn?: string | null; slug: string; sort: number; is_active: boolean } }) {
   const [state, action, pending] = useActionState(saveCategory, {});
   return (
-    <form action={action} className="grid grid-cols-[1fr_1fr_4rem_auto_auto] items-center gap-2">
+    <form action={action} className="grid grid-cols-[1fr_1fr_1fr_4rem_auto_auto] items-center gap-2">
       {c && <input type="hidden" name="id" value={c.id} />}
       <input name="name" required defaultValue={c?.name} placeholder="Name" aria-label="Category name" className={field} />
+      <input name="name_bn" defaultValue={c?.name_bn ?? ""} placeholder="বাংলা নাম" aria-label="Category name in Bangla" lang="bn" className={field} />
       <input name="slug" required defaultValue={c?.slug} placeholder="slug" aria-label="Slug" className={field} />
       <input name="sort" type="number" min={0} defaultValue={c?.sort ?? 0} aria-label="Sort order" className={field} />
       <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" name="is_active" defaultChecked={c?.is_active ?? true} className="accent-[var(--color-ink)]" /> Live</label>
       <button disabled={pending} className={c ? btnGhost : btn}>{c ? "Save" : "Add"}</button>
-      {(state.error || state.ok) && <div className="col-span-5"><ActionMsg state={state} /></div>}
+      {(state.error || state.ok) && <div className="col-span-6"><ActionMsg state={state} /></div>}
     </form>
   );
 }

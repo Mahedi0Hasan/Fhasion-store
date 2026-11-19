@@ -1,38 +1,37 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CATALOG_TAG } from "@/lib/catalog-source";
 import { orderRequestSchema, toE164, zoneFor } from "@/lib/validation/checkout";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 import { hasOrderTokenSecret, signOrder } from "@/lib/order-token";
 import { PAYMENT_ADAPTERS } from "@/lib/payments";
 import { rateLimit } from "@/lib/rate-limit";
+import { getI18n } from "@/lib/i18n/server";
+import { translateMessage } from "@/lib/i18n";
+import { localizeCouponError } from "@/lib/i18n/coupon";
 
-const FRIENDLY: Record<string, string> = {
-  OUT_OF_STOCK: "Sorry, one of your items just sold out. Please review your bag.",
-  UNKNOWN_ITEM: "One of your items is no longer available. Please review your bag.",
-  INVALID_QTY: "Please check the quantities in your bag.",
-  INVALID_ZONE: "Please check your delivery area.",
-  COD_BD_ONLY: "Cash on delivery is only available in Bangladesh.",
-  EMPTY_CART: "Your bag is empty.",
-};
+const FRIENDLY = new Set(["OUT_OF_STOCK", "UNKNOWN_ITEM", "INVALID_QTY", "INVALID_ZONE", "COD_BD_ONLY", "EMPTY_CART"]);
 
 export async function POST(req: Request) {
+  const { t, dict, money } = await getI18n();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   if (!rateLimit(`order:${ip}`, 5, 60_000).ok) {
-    return NextResponse.json({ error: "Too many attempts. Please wait a minute and try again." }, { status: 429 });
+    return NextResponse.json({ error: t("err.rate") }, { status: 429 });
   }
   if (!isDbConfigured() || !hasOrderTokenSecret()) {
-    return NextResponse.json({ error: "Checkout isn't connected yet. Please try again soon." }, { status: 503 });
+    return NextResponse.json({ error: t("err.notConnected") }, { status: 503 });
   }
 
   const parsed = orderRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
-    return NextResponse.json({ error: issue?.message ?? "Please check your details.", field: issue?.path.at(-1) }, { status: 400 });
+    return NextResponse.json({ error: translateMessage(dict, issue?.message) || t("err.check"), field: issue?.path.at(-1) }, { status: 400 });
   }
   const { form, lines, idempotency_key } = parsed.data;
 
   const adapter = PAYMENT_ADAPTERS[form.payment_method];
   if (!adapter.isAvailable() || !adapter.supportsCountry(form.country)) {
-    return NextResponse.json({ error: `${adapter.label} isn't available for this order.`, field: "payment_method" }, { status: 400 });
+    return NextResponse.json({ error: t("err.methodUnavailable", { method: t(`checkout.methods.${adapter.id}.label`) }), field: "payment_method" }, { status: 400 });
   }
 
   const db = serviceClient();
@@ -60,13 +59,15 @@ export async function POST(req: Request) {
 
   if (error) {
     const [code, detail] = (error.message ?? "").split(":");
-    if (code === "COUPON") return NextResponse.json({ error: detail, field: "coupon_code" }, { status: 422 });
-    if (FRIENDLY[code]) return NextResponse.json({ error: FRIENDLY[code] }, { status: 409 });
+    if (code === "COUPON") return NextResponse.json({ error: localizeCouponError(detail, t, money), field: "coupon_code" }, { status: 422 });
+    if (FRIENDLY.has(code)) return NextResponse.json({ error: t(`err.${code}`) }, { status: 409 });
     console.error("place_order failed", error);
-    return NextResponse.json({ error: "We couldn't place your order. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: t("err.placeFailed") }, { status: 500 });
   }
 
   const order = data as { order_id: string; order_number: string; total_bdt: number; duplicate: boolean };
+  // Stock just changed: refresh the cached catalogue so sizes show the right availability.
+  if (!order.duplicate) revalidateTag(CATALOG_TAG);
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
   const token = signOrder(order.order_number);
   const returnUrl = `${origin}/order/${order.order_number}?t=${token}`;
@@ -93,6 +94,8 @@ export async function POST(req: Request) {
     console.error("payment start failed", err);
     // Order exists but payment couldn't start: release the stock right away.
     await db.rpc("cancel_order", { p_order_id: order.order_id, p_reason: "Payment could not be started." });
-    return NextResponse.json({ error: "We couldn't start the payment. Your order was not placed — please try another method." }, { status: 502 });
+    revalidateTag(CATALOG_TAG);
+    return NextResponse.json({ error: t("err.payStart") }, { status: 502 });
   }
 }
+

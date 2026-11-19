@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import { newsletterSchema } from "@/lib/validation/newsletter";
 import { rateLimit } from "@/lib/rate-limit";
+import { serverT } from "@/lib/i18n/server";
+import { translateMessage, DICTS } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 export async function POST(req: Request) {
+  const t = await serverT();
+  const dict = DICTS[await getLocale()];
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   const rl = rateLimit(`newsletter:${ip}`, 5, 60_000);
   if (!rl.ok) {
-    return NextResponse.json({ error: "Too many attempts. Please try again in a minute." }, { status: 429 });
+    return NextResponse.json({ error: t("err.rate") }, { status: 429 });
   }
 
   const body = await req.json().catch(() => null);
   const parsed = newsletterSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
+    return NextResponse.json({ error: translateMessage(dict, parsed.error.issues[0]?.message) || t("err.check") }, { status: 400 });
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,7 +25,7 @@ export async function POST(req: Request) {
   if (!url || !key) {
     // Honest failure: never pretend a subscription was stored.
     return NextResponse.json(
-      { error: "Sign-ups open once the store database is connected. Please check back soon." },
+      { error: t("err.nlNotConnected") },
       { status: 503 },
     );
   }
@@ -37,7 +42,7 @@ export async function POST(req: Request) {
   });
 
   if (!res.ok) {
-    return NextResponse.json({ error: "We couldn't save your email. Please try again." }, { status: 502 });
+    return NextResponse.json({ error: t("err.nlFailed") }, { status: 502 });
   }
   return NextResponse.json({ ok: true });
 }

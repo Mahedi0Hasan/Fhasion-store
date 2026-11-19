@@ -5,10 +5,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { newsletterSchema } from "@/lib/validation/newsletter";
 import { RevealWords } from "@/components/animations/reveal";
+import { useI18n } from "@/lib/i18n/client";
 
 type State = { status: "idle" | "loading" | "success" | "error"; message?: string };
 
 export function Newsletter() {
+  const { t, tm } = useI18n();
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>({ status: "idle" });
 
@@ -16,7 +18,7 @@ export function Newsletter() {
     e.preventDefault();
     const parsed = newsletterSchema.safeParse({ email });
     if (!parsed.success) {
-      setState({ status: "error", message: parsed.error.issues[0]?.message });
+      setState({ status: "error", message: tm(parsed.error.issues[0]?.message) });
       return;
     }
     setState({ status: "loading" });
@@ -27,29 +29,29 @@ export function Newsletter() {
         body: JSON.stringify(parsed.data),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
-      setState({ status: "success", message: "You're on the list. Welcome to DEMO." });
+      if (!res.ok) throw new Error(data.error ?? t("checkout.generic"));
+      setState({ status: "success", message: t("home.newsletter.success") });
       setEmail("");
     } catch (err) {
-      setState({ status: "error", message: err instanceof Error ? err.message : "Something went wrong." });
+      setState({ status: "error", message: err instanceof Error ? err.message : t("checkout.generic") });
     }
   }
 
   return (
     <section className="bg-sand/60">
       <div className="container-x py-24 text-center md:py-32">
-        <p className="label mb-5 text-stone">The DEMO letter</p>
+        <p className="label mb-5 text-stone">{t("home.newsletter.eyebrow")}</p>
         <h2 className="mx-auto max-w-3xl font-serif text-5xl leading-[0.95] text-ink md:text-7xl">
-          <RevealWords text="New arrivals, first. Never too often." />
+          <RevealWords text={t("home.newsletter.title")} />
         </h2>
         <form onSubmit={onSubmit} noValidate className="mx-auto mt-12 flex max-w-md items-center gap-2 border-b border-ink/30 pb-2 focus-within:border-ink">
-          <label htmlFor="nl-email" className="sr-only">Email address</label>
+          <label htmlFor="nl-email" className="sr-only">{t("home.newsletter.label")}</label>
           <input
             id="nl-email"
             type="email"
             inputMode="email"
             autoComplete="email"
-            placeholder="Your email address"
+            placeholder={t("home.newsletter.placeholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={state.status === "error"}
@@ -59,7 +61,7 @@ export function Newsletter() {
           <button
             type="submit"
             disabled={state.status === "loading"}
-            aria-label="Subscribe"
+            aria-label={t("home.newsletter.subscribe")}
             className="grid size-11 place-items-center rounded-full bg-ink text-ivory transition-transform duration-300 hover:scale-105 disabled:opacity-60"
           >
             {state.status === "loading" ? <Loader2 className="size-4 animate-spin" /> : state.status === "success" ? <Check className="size-4" /> : <ArrowRight className="size-4" />}
@@ -80,7 +82,7 @@ export function Newsletter() {
             )}
           </AnimatePresence>
         </div>
-        <p className="mt-2 text-xs text-stone">By subscribing you agree to our privacy policy. Unsubscribe anytime.</p>
+        <p className="mt-2 text-xs text-stone">{t("home.newsletter.consent")}</p>
       </div>
     </section>
   );

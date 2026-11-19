@@ -1,9 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { formatBDT, totalStock, type Product } from "@/lib/catalog";
+import { totalStock, type Product } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n/client";
 import { WishButton } from "./wish-button";
 
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
+  const { t, money: formatBDT } = useI18n();
   const img = product.images[0];
   const onSale = product.salePriceBDT !== undefined && product.salePriceBDT < product.priceBDT;
   const soldOut = totalStock(product) === 0;
@@ -23,12 +27,12 @@ export function ProductCard({ product, priority = false }: { product: Product; p
             }`}
           />
           <div className="pointer-events-none absolute left-3 top-3 flex gap-1.5">
-            {product.tags.includes("new") && <Badge>New</Badge>}
-            {onSale && <Badge tone="clay">Sale</Badge>}
-            {soldOut && <Badge tone="stone">Sold out</Badge>}
+            {product.tags.includes("new") && <Badge>{t("card.new")}</Badge>}
+            {onSale && <Badge tone="clay">{t("card.sale")}</Badge>}
+            {soldOut && <Badge tone="stone">{t("card.soldOut")}</Badge>}
           </div>
           <span className="absolute inset-x-3 bottom-3 hidden translate-y-3 rounded-full bg-ivory/90 py-2.5 text-center text-xs font-medium text-ink opacity-0 backdrop-blur transition duration-500 ease-[var(--ease-soft)] group-hover:translate-y-0 group-hover:opacity-100 md:block">
-            View piece
+            {t("card.view")}
           </span>
         </div>
         <div className="mt-4 flex items-start justify-between gap-3">

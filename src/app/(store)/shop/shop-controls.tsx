@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Search, SlidersHorizontal, X } from "lucide-react";
 import { SORTS, type Category, type Facets, type ShopQuery } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n/client";
 
 type Patch = Partial<Omit<ShopQuery, "page">>;
 
@@ -25,6 +26,8 @@ export function ShopControls({ query, total, categories, facets, children }: { q
   const router = useRouter();
   const pathname = usePathname();
   const [pending, start] = useTransition();
+  const { t, num } = useI18n();
+  const count = (n: number) => t(n === 1 ? "shop.piece" : "shop.pieces", { n: num(n) });
   const [sheet, setSheet] = useState(false);
   const [term, setTerm] = useState(query.q ?? "");
 
@@ -56,23 +59,23 @@ export function ShopControls({ query, total, categories, facets, children }: { q
           className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-ink/15 px-4 focus-within:border-ink md:max-w-xs"
         >
           <Search className="size-4 shrink-0 text-stone" />
-          <label htmlFor="shop-q" className="sr-only">Search products</label>
-          <input id="shop-q" type="search" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search pieces" className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-stone/70 focus:outline-none" />
+          <label htmlFor="shop-q" className="sr-only">{t("shop.searchLabel")}</label>
+          <input id="shop-q" type="search" value={term} onChange={(e) => setTerm(e.target.value)} placeholder={t("shop.searchPh")} className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-stone/70 focus:outline-none" />
         </form>
         <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-ink/15 px-4 text-sm lg:hidden">
-          <SlidersHorizontal className="size-4" /> Filters{activeCount > 0 && <span className="grid size-5 place-items-center rounded-full bg-ink text-[0.65rem] text-ivory">{activeCount}</span>}
+          <SlidersHorizontal className="size-4" /> {t("shop.filters")}{activeCount > 0 && <span className="grid size-5 place-items-center rounded-full bg-ink text-[0.65rem] text-ivory">{num(activeCount)}</span>}
         </button>
-        <p className="hidden text-sm text-stone md:block" aria-live="polite">{pending ? "Updating…" : `${total} ${total === 1 ? "piece" : "pieces"}`}</p>
+        <p className="hidden text-sm text-stone md:block" aria-live="polite">{pending ? t("shop.updating") : count(total)}</p>
         <div className="ml-auto flex items-center gap-2">
-          <label htmlFor="sort" className="hidden text-sm text-stone sm:block">Sort</label>
+          <label htmlFor="sort" className="hidden text-sm text-stone sm:block">{t("shop.sort")}</label>
           <select id="sort" value={query.sort} onChange={(e) => update({ sort: e.target.value as ShopQuery["sort"] })} className="h-10 rounded-full border border-ink/15 bg-transparent pl-4 pr-8 text-sm focus:border-ink focus:outline-none">
-            {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            {SORTS.map((s) => <option key={s.value} value={s.value}>{t(`shop.sorts.${s.value}`)}</option>)}
           </select>
         </div>
       </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[15rem_1fr] lg:gap-14">
-        <aside aria-label="Filters" className="hidden lg:block">{panel}</aside>
+        <aside aria-label={t("shop.filters")} className="hidden lg:block">{panel}</aside>
         <div className={`transition-opacity duration-300 ${pending ? "opacity-50" : ""}`}>{children}</div>
       </div>
 
@@ -84,7 +87,7 @@ export function ShopControls({ query, total, categories, facets, children }: { q
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label="Filters"
+              aria-label={t("shop.filters")}
               className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85svh] flex-col rounded-t-3xl bg-ivory lg:hidden"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -92,12 +95,12 @@ export function ShopControls({ query, total, categories, facets, children }: { q
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="flex items-center justify-between border-b border-line px-6 py-4">
-                <p className="font-serif text-2xl">Filters</p>
-                <button type="button" aria-label="Close filters" onClick={() => setSheet(false)} className="grid size-10 place-items-center"><X className="size-5" /></button>
+                <p className="font-serif text-2xl">{t("shop.filters")}</p>
+                <button type="button" aria-label={t("shop.closeFilters")} onClick={() => setSheet(false)} className="grid size-10 place-items-center"><X className="size-5" /></button>
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-6">{panel}</div>
               <div className="border-t border-line p-4">
-                <button type="button" onClick={() => setSheet(false)} className="h-12 w-full rounded-full bg-ink text-sm font-medium text-ivory">Show {total} {total === 1 ? "piece" : "pieces"}</button>
+                <button type="button" onClick={() => setSheet(false)} className="h-12 w-full rounded-full bg-ink text-sm font-medium text-ivory">{t(total === 1 ? "shop.showOne" : "shop.show", { n: num(total) })}</button>
               </div>
             </motion.div>
           </>
@@ -108,6 +111,7 @@ export function ShopControls({ query, total, categories, facets, children }: { q
 }
 
 function FilterPanel({ query, update, categories, facets }: { query: ShopQuery; update: (p: Patch) => void; categories: Category[]; facets: Facets }) {
+  const { t, locale } = useI18n();
   const [min, setMin] = useState(query.min?.toString() ?? "");
   const [max, setMax] = useState(query.max?.toString() ?? "");
   useEffect(() => { setMin(query.min?.toString() ?? ""); setMax(query.max?.toString() ?? ""); }, [query.min, query.max]);
@@ -119,18 +123,18 @@ function FilterPanel({ query, update, categories, facets }: { query: ShopQuery; 
     <div className="space-y-9">
       {hasAny && (
         <button type="button" onClick={() => update({ category: undefined, sizes: [], colours: [], min: undefined, max: undefined })} className="text-xs font-medium underline underline-offset-4">
-          Clear all filters
+          {t("shop.clearAll")}
         </button>
       )}
-      <Group title="Category">
+      <Group title={t("shop.category")}>
         <ul className="space-y-1.5">
-          <li><CatButton active={!query.category} onClick={() => update({ category: undefined })}>All</CatButton></li>
+          <li><CatButton active={!query.category} onClick={() => update({ category: undefined })}>{t("shop.allCat")}</CatButton></li>
           {categories.map((c) => (
             <li key={c.slug}><CatButton active={query.category === c.slug} onClick={() => update({ category: c.slug })}>{c.name}</CatButton></li>
           ))}
         </ul>
       </Group>
-      <Group title="Size">
+      <Group title={t("shop.size")}>
         <div className="flex flex-wrap gap-2">
           {facets.sizes.map((s) => {
             const on = query.sizes.includes(s);
@@ -142,12 +146,12 @@ function FilterPanel({ query, update, categories, facets }: { query: ShopQuery; 
           })}
         </div>
       </Group>
-      <Group title="Colour">
+      <Group title={t("shop.colour")}>
         <div className="flex flex-wrap gap-2.5">
           {facets.colours.map((c) => {
             const on = query.colours.includes(c.name);
             return (
-              <button key={c.name} type="button" aria-pressed={on} aria-label={c.name} title={c.name} onClick={() => update({ colours: toggle(query.colours, c.name) })} className={`relative grid size-9 place-items-center rounded-full ring-1 ring-offset-2 ring-offset-cream transition ${on ? "ring-ink" : "ring-transparent hover:ring-ink/30"}`}>
+              <button key={c.name} type="button" aria-pressed={on} aria-label={locale === "bn" && c.nameBn ? c.nameBn : c.name} title={locale === "bn" && c.nameBn ? c.nameBn : c.name} onClick={() => update({ colours: toggle(query.colours, c.name) })} className={`relative grid size-9 place-items-center rounded-full ring-1 ring-offset-2 ring-offset-cream transition ${on ? "ring-ink" : "ring-transparent hover:ring-ink/30"}`}>
                 <span className="size-7 rounded-full ring-1 ring-black/10" style={{ background: c.hex }} />
                 {on && <Check className="absolute size-3.5 text-ink mix-blend-difference" />}
               </button>
@@ -155,7 +159,7 @@ function FilterPanel({ query, update, categories, facets }: { query: ShopQuery; 
           })}
         </div>
       </Group>
-      <Group title="Price (BDT)">
+      <Group title={t("shop.price")}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -165,12 +169,12 @@ function FilterPanel({ query, update, categories, facets }: { query: ShopQuery; 
           }}
           className="flex items-center gap-2"
         >
-          <label htmlFor="pmin" className="sr-only">Minimum price</label>
+          <label htmlFor="pmin" className="sr-only">{t("shop.min")}</label>
           <input id="pmin" inputMode="numeric" placeholder={String(facets.price.min)} value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ""))} className="h-9 w-full rounded-full border border-ink/15 bg-transparent px-3 text-xs focus:border-ink focus:outline-none" />
           <span className="text-stone">–</span>
-          <label htmlFor="pmax" className="sr-only">Maximum price</label>
+          <label htmlFor="pmax" className="sr-only">{t("shop.max")}</label>
           <input id="pmax" inputMode="numeric" placeholder={String(facets.price.max)} value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ""))} className="h-9 w-full rounded-full border border-ink/15 bg-transparent px-3 text-xs focus:border-ink focus:outline-none" />
-          <button type="submit" className="h-9 shrink-0 rounded-full bg-ink px-3 text-xs text-ivory">Go</button>
+          <button type="submit" className="h-9 shrink-0 rounded-full bg-ink px-3 text-xs text-ivory">{t("shop.go")}</button>
         </form>
       </Group>
     </div>

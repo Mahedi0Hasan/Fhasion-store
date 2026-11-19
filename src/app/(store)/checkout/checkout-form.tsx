@@ -9,15 +9,21 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Lock } from "lucide-react";
 import { useStore } from "@/components/cart/store-provider";
 import { CouponForm } from "@/components/cart/cart-parts";
-import { formatBDT } from "@/lib/catalog";
 import { COUNTRIES } from "@/lib/countries";
-import { SHIPPING_ZONES, shippingFor } from "@/lib/shipping";
+import { feeFor } from "@/lib/shipping/zones";
+import { useI18n } from "@/lib/i18n/client";
 import { checkoutSchema, zoneFor, type CheckoutInput } from "@/lib/validation/checkout";
 import type { PaymentOption } from "@/lib/payments";
 
 export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; payments: PaymentOption[]; usdRate: number | null }) {
-  const { lines, subtotal, coupon, hydrated, clear } = useStore();
+  const { lines, subtotal, coupon, hydrated, clear, zones } = useStore();
   const [serverError, setServerError] = useState<string | null>(null);
+  const { t, tm, money: formatBDT, num, locale } = useI18n();
+  const zLabel = (id: string, fallback: string) => { const v = t(`zones.${id}.label`); return v.startsWith("zones.") ? fallback : v; };
+  const countryName = (code: string, fallback: string) => {
+    try { return new Intl.DisplayNames([locale], { type: "region" }).of(code) ?? fallback; } catch { return fallback; }
+  };
+  const eta = (e: string) => { const v = t(`zones.eta.${e}`); return v.startsWith("zones.") ? e : v; };
   const idem = useRef<string>("");
   if (!idem.current && typeof crypto !== "undefined") idem.current = crypto.randomUUID();
 
@@ -53,9 +59,9 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
   useEffect(() => setValue("coupon_code", coupon?.code ?? ""), [coupon, setValue]);
 
   const zoneId = zoneFor(country, area);
-  const zone = SHIPPING_ZONES.find((z) => z.id === zoneId)!;
+  const zone = zones.find((z) => z.id === zoneId) ?? zones[0];
   const discount = coupon?.discountBDT ?? 0;
-  const shipping = shippingFor(zoneId, subtotal - discount);
+  const shipping = feeFor(zone, subtotal - discount);
   const total = subtotal - discount + shipping;
 
   async function onSubmit(values: CheckoutInput) {
@@ -73,7 +79,7 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (data.field) setError(data.field as FieldPath<CheckoutInput>, { message: data.error });
-        setServerError(data.error ?? "Something went wrong. Please try again.");
+        setServerError(data.error ?? t("checkout.generic"));
         // A rejected order never existed — allow a fresh attempt.
         if (res.status !== 429 && res.status < 500) idem.current = crypto.randomUUID();
         return;
@@ -81,15 +87,15 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
       clear();
       window.location.assign(data.next);
     } catch {
-      setServerError("Network problem. Please check your connection and try again.");
+      setServerError(t("checkout.network"));
     }
   }
 
   if (hydrated && lines.length === 0) {
     return (
       <div className="mt-12 flex flex-col items-start gap-5">
-        <p className="text-stone">Your bag is empty.</p>
-        <Link href="/shop" className="inline-flex h-12 items-center rounded-full bg-ink px-8 text-sm font-medium text-ivory">Continue shopping</Link>
+        <p className="text-stone">{t("cart.emptyShort")}</p>
+        <Link href="/shop" className="inline-flex h-12 items-center rounded-full bg-ink px-8 text-sm font-medium text-ivory">{t("cart.continue")}</Link>
       </div>
     );
   }
@@ -97,67 +103,68 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-10 grid gap-12 md:grid-cols-12">
       <div className="space-y-12 md:col-span-7">
-        <Section n="01" title="Contact">
+        <Section n={num(1).padStart(2, num(0))} title={t("checkout.contact")}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Full name" error={errors.name?.message} className="sm:col-span-2">
+            <Field label={t("checkout.name")} error={tm(errors.name?.message)} className="sm:col-span-2">
               <input {...register("name")} autoComplete="name" className={input} />
             </Field>
-            <Field label="Email" error={errors.email?.message}>
+            <Field label={t("checkout.email")} error={tm(errors.email?.message)}>
               <input {...register("email")} type="email" autoComplete="email" inputMode="email" className={input} />
             </Field>
-            <Field label="Phone" error={errors.phone?.message} hint={isBD ? "e.g. 01712 345678" : "Include country code, e.g. +44 7700 900123"}>
+            <Field label={t("checkout.phone")} error={tm(errors.phone?.message)} hint={isBD ? t("checkout.phoneHintBD") : t("checkout.phoneHintIntl")}>
               <input {...register("phone")} type="tel" autoComplete="tel" inputMode="tel" className={input} />
             </Field>
           </div>
         </Section>
 
-        <Section n="02" title="Delivery">
+        <Section n={num(2).padStart(2, num(0))} title={t("checkout.delivery")}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Country" error={errors.country?.message} className="sm:col-span-2">
+            <Field label={t("checkout.country")} error={tm(errors.country?.message)} className="sm:col-span-2">
               <select {...register("country")} autoComplete="country" className={input}>
-                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+                {COUNTRIES.map((c) => <option key={c.code} value={c.code} suppressHydrationWarning>{countryName(c.code, c.name)}</option>)}
               </select>
             </Field>
             {isBD && (
               <fieldset className="sm:col-span-2">
-                <legend className="mb-2 text-xs text-stone">Delivery area</legend>
+                <legend className="mb-2 text-xs text-stone">{t("checkout.area")}</legend>
                 <div className="grid grid-cols-2 gap-3">
                   {(["dhaka", "outside-dhaka"] as const).map((id) => {
-                    const z = SHIPPING_ZONES.find((s) => s.id === id)!;
+                    const z = zones.find((s) => s.id === id);
+                    if (!z) return null;
                     return (
                       <label key={id} className={`${choice} ${area === id ? choiceOn : ""}`}>
                         <input type="radio" value={id} {...register("delivery_area")} className="sr-only" />
-                        <span className="text-sm font-medium text-ink">{z.label}</span>
-                        <span className="text-xs text-stone">{formatBDT(z.feeBDT)} · {z.eta}</span>
+                        <span className="text-sm font-medium text-ink">{zLabel(z.id, z.label)}</span>
+                        <span className="text-xs text-stone">{formatBDT(z.feeBDT)} · {eta(z.eta)}</span>
                       </label>
                     );
                   })}
                 </div>
-                {errors.delivery_area && <p className={err}>{errors.delivery_area.message}</p>}
+                {errors.delivery_area && <p className={err}>{tm(errors.delivery_area.message)}</p>}
               </fieldset>
             )}
-            <Field label="Address" error={errors.address_line1?.message} className="sm:col-span-2">
-              <input {...register("address_line1")} autoComplete="address-line1" placeholder="House, road, area" className={input} />
+            <Field label={t("checkout.address")} error={tm(errors.address_line1?.message)} className="sm:col-span-2">
+              <input {...register("address_line1")} autoComplete="address-line1" placeholder={t("checkout.addressPh")} className={input} />
             </Field>
-            <Field label="Apartment, floor (optional)" className="sm:col-span-2">
+            <Field label={t("checkout.apt")} className="sm:col-span-2">
               <input {...register("address_line2")} autoComplete="address-line2" className={input} />
             </Field>
-            <Field label={isBD ? "City / Upazila" : "City"} error={errors.city?.message}>
+            <Field label={isBD ? t("checkout.cityBD") : t("checkout.city")} error={tm(errors.city?.message)}>
               <input {...register("city")} autoComplete="address-level2" className={input} />
             </Field>
-            <Field label={isBD ? "District (optional)" : "State / Region (optional)"}>
+            <Field label={isBD ? t("checkout.districtOpt") : t("checkout.regionOpt")}>
               <input {...register("region")} autoComplete="address-level1" className={input} />
             </Field>
-            <Field label="Postal code (optional)">
+            <Field label={t("checkout.postalOpt")}>
               <input {...register("postal_code")} autoComplete="postal-code" className={input} />
             </Field>
-            <Field label="Delivery notes (optional)" className="sm:col-span-2">
+            <Field label={t("checkout.notesOpt")} className="sm:col-span-2">
               <textarea {...register("notes")} rows={2} className={`${input} h-auto py-3`} />
             </Field>
           </div>
         </Section>
 
-        <Section n="03" title="Payment">
+        <Section n={num(3).padStart(2, num(0))} title={t("checkout.payment")}>
           <div className="space-y-3">
             {payments
               .filter((p) => p.countries === "all" || isBD)
@@ -168,17 +175,17 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
                     <span className="flex items-center gap-3">
                       <input type="radio" value={p.id} disabled={disabled} {...register("payment_method")} className="size-4 accent-[var(--color-ink)]" />
                       <span>
-                        <span className="block text-sm font-medium text-ink">{p.label}</span>
-                        <span className="block text-xs text-stone">{disabled ? "Not available yet" : p.description}</span>
+                        <span className="block text-sm font-medium text-ink">{t(`checkout.methods.${p.id}.label`)}</span>
+                        <span className="block text-xs text-stone">{disabled ? t("checkout.notAvailable") : t(`checkout.methods.${p.id}.desc`)}</span>
                       </span>
                     </span>
                   </label>
                 );
               })}
-            {errors.payment_method && <p className={err}>{errors.payment_method.message}</p>}
+            {errors.payment_method && <p className={err}>{tm(errors.payment_method.message)}</p>}
             {!isBD && !payments.some((p) => p.available && p.countries === "all") && (
               <p className="rounded-[2px] bg-sand px-4 py-3 text-sm text-ink">
-                International card payments are being set up. Please <Link href="/contact" className="underline">contact us</Link> to order from outside Bangladesh.
+                {t("checkout.intlSoon", { contact: "\u0000" }).split("\u0000")[0]}<Link href="/contact" className="underline">{t("checkout.contactUs")}</Link>{t("checkout.intlSoon", { contact: "\u0000" }).split("\u0000")[1]}
               </p>
             )}
           </div>
@@ -188,7 +195,7 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
       {/* Summary */}
       <aside className="md:col-span-5 md:col-start-8">
         <div className="sticky top-24 rounded-[2px] bg-ivory p-6">
-          <p className="mb-4 font-serif text-2xl">Your order</p>
+          <p className="mb-4 font-serif text-2xl">{t("checkout.yourOrder")}</p>
           <ul className="divide-y divide-line">
             {lines.map((l) => (
               <li key={`${l.productId}-${l.size}`} className="flex gap-3 py-3">
@@ -198,7 +205,7 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
                 </div>
                 <div className="min-w-0 flex-1 text-sm">
                   <p className="truncate text-ink">{l.product.name}</p>
-                  <p className="text-xs text-stone">{l.product.colour} · {l.size}</p>
+                  <p className="text-xs text-stone">{t("cart.sizeColour", { colour: l.product.colour, size: l.size })}</p>
                 </div>
                 <p className="text-sm text-ink">{formatBDT(l.lineTotal)}</p>
               </li>
@@ -206,15 +213,15 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
           </ul>
           <div className="mt-4"><CouponForm /></div>
           <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
-            <Row k="Subtotal" v={formatBDT(subtotal)} />
-            {discount > 0 && <Row k={`Discount (${coupon!.code})`} v={`− ${formatBDT(discount)}`} accent />}
-            <Row k={`Delivery · ${zone.label}`} v={shipping === 0 ? "Free" : formatBDT(shipping)} />
+            <Row k={t("cart.subtotal")} v={formatBDT(subtotal)} />
+            {discount > 0 && <Row k={t("cart.discount", { code: coupon!.code })} v={`− ${formatBDT(discount)}`} accent />}
+            <Row k={t("checkout.delivery2", { zone: zLabel(zone.id, zone.label) })} v={shipping === 0 ? t("cart.free") : formatBDT(shipping)} />
             <div className="flex items-baseline justify-between border-t border-line pt-3">
-              <dt className="font-medium">Total</dt>
+              <dt className="font-medium">{t("checkout.total")}</dt>
               <dd className="font-serif text-3xl">{formatBDT(total)}</dd>
             </div>
             {!isBD && usdRate && (
-              <p className="text-right text-xs text-stone">≈ US$ {(total / usdRate).toFixed(2)} for reference. You&apos;re charged in BDT.</p>
+              <p className="text-right text-xs text-stone">{t("checkout.usdRef", { usd: (total / usdRate).toFixed(2) })}</p>
             )}
           </dl>
 
@@ -234,11 +241,11 @@ export function CheckoutForm({ ready, payments, usdRate }: { ready: boolean; pay
             <span className="absolute inset-0 origin-left scale-x-0 bg-clay transition-transform duration-500 group-enabled:group-hover:scale-x-100" />
             <span className="relative inline-flex items-center gap-2">
               {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Lock className="size-4" />}
-              {method === "cod" ? `Place order · ${formatBDT(total)}` : `Continue to payment · ${formatBDT(total)}`}
+              {method === "cod" ? t("checkout.place", { total: formatBDT(total) }) : t("checkout.toPayment", { total: formatBDT(total) })}
             </span>
           </button>
           <p className="mt-3 text-center text-[0.7rem] text-stone">
-            Prices are confirmed on our server when you place the order.
+            {t("checkout.confirmedOnServer")}
           </p>
         </div>
       </aside>

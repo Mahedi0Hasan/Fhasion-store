@@ -13,6 +13,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { ArrowLeft, ArrowRight, ShoppingBag } from "lucide-react";
+import { useI18n } from "@/lib/i18n/client";
 
 type Slide = {
   id: string;
@@ -31,7 +32,7 @@ type Slide = {
   bg: [string, string];
 };
 
-const SLIDES: Slide[] = [
+const BASE_SLIDES: Slide[] = [
   {
     id: "cashmere",
     word: "Cashmere",
@@ -102,6 +103,17 @@ export function Hero() {
   const [dir, setDir] = useState(1);
   const [paused, setPaused] = useState(false);
   const reduce = useReducedMotion() ?? false;
+  const { t, money, num, locale } = useI18n();
+  // Copy comes from the dictionary; images, prices and layout stay in BASE_SLIDES.
+  const SLIDES: Slide[] = BASE_SLIDES.map((s) => ({
+    ...s,
+    word: t(`hero.slides.${s.id}.word`),
+    tag: t(`hero.slides.${s.id}.tag`),
+    name: t(`hero.slides.${s.id}.name`),
+    colour: t(`hero.slides.${s.id}.colour`),
+    blurb: t(`hero.slides.${s.id}.blurb`),
+    price: money(Number(s.price.replace(/\D/g, ""))),
+  }));
   const slide = SLIDES[index];
   const prev = SLIDES[(index - 1 + SLIDES.length) % SLIDES.length];
   const next = SLIDES[(index + 1) % SLIDES.length];
@@ -125,7 +137,7 @@ export function Hero() {
 
   const go = useCallback(
     (to: number, d?: number) => {
-      const n = (to + SLIDES.length) % SLIDES.length;
+      const n = (to + BASE_SLIDES.length) % BASE_SLIDES.length;
       setDir(d ?? (n > index ? 1 : -1));
       setIndex(n);
     },
@@ -151,13 +163,15 @@ export function Hero() {
     my.set((e.clientY - r.top) / r.height - 0.5);
   }
 
-  const wordSize = `min(${Math.round(132 / slide.word.length)}vw, 19vw)`;
+  // Bengali conjuncts break if split into letters, so Bangla animates the word whole.
+  const letters = locale === "bn" ? [slide.word] : slide.word.split("");
+  const wordSize = locale === "bn" ? "min(17vw, 15rem)" : `min(${Math.round(132 / slide.word.length)}vw, 19vw)`;
 
   return (
     <section
       ref={ref}
       aria-roledescription="carousel"
-      aria-label="Featured pieces"
+      aria-label={t("hero.aria")}
       onPointerMove={onPointerMove}
       onPointerLeave={() => {
         mx.set(0);
@@ -189,7 +203,7 @@ export function Hero() {
             transition={{ duration: 0.5, ease: EASE }}
             className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-ivory/70 py-1 pl-1 pr-3.5 text-[0.72rem] text-stone backdrop-blur"
           >
-            <span className="rounded-full bg-ink px-2 py-0.5 text-[0.62rem] font-medium uppercase tracking-wider text-ivory">New</span>
+            <span className="rounded-full bg-ink px-2 py-0.5 text-[0.62rem] font-medium uppercase tracking-wider text-ivory">{t("hero.new")}</span>
             {slide.tag}
           </motion.span>
         </AnimatePresence>
@@ -209,7 +223,7 @@ export function Hero() {
               className="block whitespace-nowrap font-serif leading-[0.85] tracking-[-0.035em] text-[#d8c5a8]"
               style={{ fontSize: wordSize }}
             >
-              {slide.word.split("").map((ch, i) => (
+              {letters.map((ch, i) => (
                 <motion.span
                   key={i}
                   className="inline-block"
@@ -226,8 +240,8 @@ export function Hero() {
         </motion.div>
 
         {/* Edge previews (BOSS-style carousel depth) */}
-        <EdgePreview slide={prev} side="left" onClick={() => go(index - 1, -1)} />
-        <EdgePreview slide={next} side="right" onClick={() => go(index + 1, 1)} />
+        <EdgePreview slide={prev} side="left" label={t("hero.prev")} onClick={() => go(index - 1, -1)} />
+        <EdgePreview slide={next} side="right" label={t("hero.next")} onClick={() => go(index + 1, 1)} />
 
         {/* Pedestal */}
         <Pedestal />
@@ -288,7 +302,7 @@ export function Hero() {
 
         {/* Swatch selector (left) */}
         <div className="absolute bottom-8 left-1/2 z-20 -translate-x-1/2 md:bottom-auto md:left-[clamp(1.25rem,6vw,6rem)] md:top-[58%] md:translate-x-0">
-          <div role="tablist" aria-label="Choose a piece" className="flex items-center gap-1.5 rounded-full border border-ink/10 bg-ivory/70 p-1.5 shadow-[0_8px_24px_-12px_rgba(60,40,20,0.35)] backdrop-blur">
+          <div role="tablist" aria-label={t("hero.choose")} className="flex items-center gap-1.5 rounded-full border border-ink/10 bg-ivory/70 p-1.5 shadow-[0_8px_24px_-12px_rgba(60,40,20,0.35)] backdrop-blur">
             {SLIDES.map((s, i) => (
               <button
                 key={s.id}
@@ -327,7 +341,7 @@ export function Hero() {
                 >
                   <span className="absolute inset-0 origin-left scale-x-0 bg-clay transition-transform duration-500 ease-[var(--ease-soft)] group-hover:scale-x-100" />
                   <ShoppingBag className="relative size-3.5" />
-                  <span className="relative">Shop now</span>
+                  <span className="relative">{t("hero.shopNow")}</span>
                 </Link>
                 <span className="font-serif text-xl text-ink">{slide.price}</span>
               </div>
@@ -338,12 +352,12 @@ export function Hero() {
         {/* Arrows + counter */}
         <div className="absolute bottom-8 right-[clamp(1.25rem,6vw,6rem)] z-20 hidden items-center gap-4 md:flex">
           <span className="font-serif text-lg tabular-nums text-stone">
-            <span className="text-ink">{String(index + 1).padStart(2, "0")}</span> / {String(SLIDES.length).padStart(2, "0")}
+            <span className="text-ink">{num(index + 1).padStart(2, num(0))}</span> / {num(SLIDES.length).padStart(2, num(0))}
           </span>
-          <RoundButton label="Previous piece" onClick={() => go(index - 1, -1)}>
+          <RoundButton label={t("hero.prev")} onClick={() => go(index - 1, -1)}>
             <ArrowLeft className="size-4" />
           </RoundButton>
-          <RoundButton label="Next piece" onClick={() => go(index + 1, 1)}>
+          <RoundButton label={t("hero.next")} onClick={() => go(index + 1, 1)}>
             <ArrowRight className="size-4" />
           </RoundButton>
         </div>
@@ -378,14 +392,14 @@ export function Hero() {
               <p className="mt-1 text-xs text-stone">{slide.colour} · {slide.price}</p>
             </div>
             <Link href={slide.href} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-5 text-xs font-medium text-ivory">
-              <ShoppingBag className="size-3.5" /> Shop now
+              <ShoppingBag className="size-3.5" /> {t("hero.shopNow")}
             </Link>
           </motion.div>
         </AnimatePresence>
       </div>
 
       <p className="sr-only" aria-live="polite">
-        {slide.name} in {slide.colour}, {slide.price}. Piece {index + 1} of {SLIDES.length}.
+        {t("hero.live", { name: slide.name, colour: slide.colour, price: slide.price, i: num(index + 1), n: num(SLIDES.length) })}
       </p>
     </section>
   );
@@ -428,12 +442,12 @@ function Mist({ reduce }: { reduce: boolean }) {
   );
 }
 
-function EdgePreview({ slide, side, onClick }: { slide: Slide; side: "left" | "right"; onClick: () => void }) {
+function EdgePreview({ slide, side, onClick, label }: { slide: Slide; side: "left" | "right"; onClick: () => void; label: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${side === "left" ? "Previous" : "Next"}: ${slide.name}`}
+      aria-label={`${label}: ${slide.name}`}
       className={`group absolute top-[16%] z-10 hidden h-[38%] w-[12vw] max-w-44 lg:block ${
         side === "left" ? "left-[-2vw]" : "right-[-2vw]"
       }`}

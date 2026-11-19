@@ -16,6 +16,7 @@ const fail = (e: { code?: string; message: string }): State => ({
 const catSchema = z.object({
   id: z.string().uuid().optional().or(z.literal("")),
   name: z.string().trim().min(1).max(80),
+  name_bn: z.string().trim().max(80).optional().transform((v) => v || null),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Slug: lowercase letters, numbers and dashes.").max(60),
   sort: z.coerce.number().int().min(0).max(999).default(0),
   is_active: bool,

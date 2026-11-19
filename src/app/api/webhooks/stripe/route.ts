@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CATALOG_TAG } from "@/lib/catalog-source";
 import { verifyStripeSignature } from "@/lib/payments/stripe";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 
@@ -47,5 +49,6 @@ export async function POST(req: Request) {
     console.error("apply_payment_event failed", error);
     return NextResponse.json({ error: "Processing failed" }, { status: 500 }); // Stripe will retry
   }
+  if (data === "failed" || data === "expired") revalidateTag(CATALOG_TAG); // stock was released
   return NextResponse.json({ received: true, result: data });
 }

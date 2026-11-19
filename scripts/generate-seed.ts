@@ -16,7 +16,7 @@ const out: string[] = [
   "begin;",
   "",
   "-- categories",
-  ...CATEGORIES.map((c, i) => `insert into public.categories (slug, name, sort) values (${q(c.slug)}, ${q(c.name)}, ${i}) on conflict (slug) do update set name = excluded.name, sort = excluded.sort;`),
+  ...CATEGORIES.map((c, i) => `insert into public.categories (slug, name, name_bn, sort) values (${q(c.slug)}, ${q(c.name)}, ${q(c.nameBn)}, ${i}) on conflict (slug) do update set name = excluded.name, name_bn = excluded.name_bn, sort = excluded.sort;`),
   "",
   "-- shipping zones",
   ...SHIPPING_ZONES.map((z, i) =>
@@ -31,9 +31,9 @@ const out: string[] = [
 for (const p of PRODUCTS) {
   out.push(`-- ${p.name}`);
   out.push(
-    `insert into public.products (legacy_id, slug, name, description, details, category_id, gender, colour, colour_hex, price_bdt, sale_price_bdt, is_new, is_bestseller, popularity, created_at)
-values (${q(p.id)}, ${q(p.slug)}, ${q(p.name)}, ${q(p.description)}, ${arr(p.details)}, (select id from public.categories where slug = ${q(p.category)}), ${q(p.gender)}, ${q(p.colour)}, ${q(p.colourHex)}, ${p.priceBDT}, ${p.salePriceBDT ?? "null"}, ${p.tags.includes("new")}, ${p.tags.includes("bestseller")}, ${p.popularity}, ${q(p.createdAt)})
-on conflict (legacy_id) do update set name = excluded.name, description = excluded.description, price_bdt = excluded.price_bdt, sale_price_bdt = excluded.sale_price_bdt;`,
+    `insert into public.products (legacy_id, slug, name, description, details, name_bn, colour_bn, description_bn, details_bn, category_id, gender, colour, colour_hex, price_bdt, sale_price_bdt, is_new, is_bestseller, popularity, created_at)
+values (${q(p.id)}, ${q(p.slug)}, ${q(p.name)}, ${q(p.description)}, ${arr(p.details)}, ${q(p.bn?.name)}, ${q(p.bn?.colour)}, ${q(p.bn?.description)}, ${arr(p.bn?.details ?? [])}, (select id from public.categories where slug = ${q(p.category)}), ${q(p.gender)}, ${q(p.colour)}, ${q(p.colourHex)}, ${p.priceBDT}, ${p.salePriceBDT ?? "null"}, ${p.tags.includes("new")}, ${p.tags.includes("bestseller")}, ${p.popularity}, ${q(p.createdAt)})
+on conflict (legacy_id) do update set name = excluded.name, description = excluded.description, name_bn = excluded.name_bn, colour_bn = excluded.colour_bn, description_bn = excluded.description_bn, details_bn = excluded.details_bn, price_bdt = excluded.price_bdt, sale_price_bdt = excluded.sale_price_bdt;`,
   );
   p.images.forEach((im, i) =>
     out.push(`insert into public.product_images (product_id, src, alt, fit, object_position, sort) select id, ${q(im.src)}, ${q(im.alt)}, ${q(im.fit)}, ${q(im.position)}, ${i} from public.products where legacy_id = ${q(p.id)} and not exists (select 1 from public.product_images pi join public.products pp on pp.id = pi.product_id where pp.legacy_id = ${q(p.id)} and pi.src = ${q(im.src)});`),

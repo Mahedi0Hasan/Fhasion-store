@@ -4,23 +4,25 @@ import { useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { ProductImage } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n/client";
 
 export function Gallery({ images, name }: { images: ProductImage[]; name: string }) {
   const [i, setI] = useState(0);
   const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
   const reduce = useReducedMotion();
+  const { t, num } = useI18n();
   const img = images[i];
 
   return (
     <div className="flex flex-col-reverse gap-4 md:flex-row">
       {images.length > 1 && (
-        <div className="flex gap-3 md:flex-col" role="tablist" aria-label={`${name} images`}>
+        <div className="flex gap-3 md:flex-col" role="tablist" aria-label={t("product.images", { name })}>
           {images.map((im, n) => (
             <button
               key={im.src}
               role="tab"
               aria-selected={n === i}
-              aria-label={`Image ${n + 1}`}
+              aria-label={t("product.image", { n: num(n + 1) })}
               onClick={() => setI(n)}
               className={`relative h-24 w-20 overflow-hidden bg-sand transition-opacity ${n === i ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"}`}
             >

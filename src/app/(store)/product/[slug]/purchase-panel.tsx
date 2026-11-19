@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Plus, Truck, RotateCcw } from "lucide-react";
-import { formatBDT, type Product } from "@/lib/catalog";
+import { type Product } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n/client";
 import { useStore } from "@/components/cart/store-provider";
 import { QtyStepper } from "@/components/cart/cart-parts";
 import { WishButton } from "@/components/products/wish-button";
 
 export function PurchasePanel({ product }: { product: Product }) {
   const { add, openDrawer } = useStore();
+  const { t, money: formatBDT, num } = useI18n();
   const sizes = Object.keys(product.stock);
   const [size, setSize] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
@@ -22,15 +24,15 @@ export function PurchasePanel({ product }: { product: Product }) {
 
   function onAdd() {
     if (!size) {
-      setMsg({ tone: "error", text: "Please choose a size." });
+      setMsg({ tone: "error", text: t("product.chooseSize") });
       return;
     }
     const r = add(product.id, size, qty);
     if (!r.ok) {
-      setMsg({ tone: "error", text: r.message ?? "Couldn't add to bag." });
+      setMsg({ tone: "error", text: r.message ?? t("product.couldNotAdd") });
       return;
     }
-    setMsg({ tone: "ok", text: "Added to your bag." });
+    setMsg({ tone: "ok", text: t("product.added") });
     setQty(1);
     openDrawer();
   }
@@ -45,7 +47,7 @@ export function PurchasePanel({ product }: { product: Product }) {
             <span className="font-serif text-3xl text-clay">{formatBDT(product.salePriceBDT!)}</span>
             <span className="text-sm text-stone line-through">{formatBDT(product.priceBDT)}</span>
             <span className="rounded-full bg-clay px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wider text-ivory">
-              {Math.round((1 - product.salePriceBDT! / product.priceBDT) * 100)}% off
+              {t("product.off", { n: num(Math.round((1 - product.salePriceBDT! / product.priceBDT) * 100)) })}
             </span>
           </>
         ) : (
@@ -57,16 +59,16 @@ export function PurchasePanel({ product }: { product: Product }) {
       {/* Colour (single colourway per product in the demo catalogue) */}
       <div className="mt-8 flex items-center gap-3">
         <span className="size-7 rounded-full ring-1 ring-black/10 ring-offset-2 ring-offset-cream" style={{ background: product.colourHex }} aria-hidden="true" />
-        <span className="text-sm text-ink">Colour: {product.colour}</span>
+        <span className="text-sm text-ink">{t("product.colour", { c: product.colour })}</span>
       </div>
 
       {/* Size */}
       <fieldset className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <legend className="label text-stone">Size</legend>
+          <legend className="label text-stone">{t("product.size")}</legend>
           {size && (
             <span className={`text-xs ${stock <= 3 ? "text-clay" : "text-stone"}`} aria-live="polite">
-              {stock <= 3 ? `Only ${stock} left` : "In stock"}
+              {stock <= 3 ? t("product.onlyLeft", { n: num(stock) }) : t("product.inStock")}
             </span>
           )}
         </div>
@@ -80,7 +82,7 @@ export function PurchasePanel({ product }: { product: Product }) {
                 type="button"
                 disabled={out}
                 aria-pressed={on}
-                aria-label={out ? `${s}, sold out` : s}
+                aria-label={out ? t("product.soldOutSize", { s }) : s}
                 onClick={() => {
                   setSize(s);
                   setQty(1);
@@ -99,7 +101,7 @@ export function PurchasePanel({ product }: { product: Product }) {
 
       {/* Qty + actions */}
       <div className="mt-8 flex items-center gap-3">
-        <QtyStepper value={qty} max={size ? maxQty : 1} onChange={setQty} label="Quantity" />
+        <QtyStepper value={qty} max={size ? maxQty : 1} onChange={setQty} label={t("product.quantity")} />
         <motion.button
           type="button"
           whileTap={{ scale: 0.98 }}
@@ -109,7 +111,7 @@ export function PurchasePanel({ product }: { product: Product }) {
         >
           <span className="absolute inset-0 origin-left scale-x-0 bg-clay transition-transform duration-500 ease-[var(--ease-soft)] group-hover:scale-x-100" />
           <span className="relative inline-flex items-center gap-2">
-            {allSoldOut ? "Sold out" : <><Plus className="size-4" /> Add to bag</>}
+            {allSoldOut ? t("product.soldOut") : <><Plus className="size-4" /> {t("product.add")}</>}
           </span>
         </motion.button>
         <WishButton productId={product.id} name={product.name} className="grid size-12 shrink-0 place-items-center rounded-full border border-ink/20 text-ink transition-colors hover:border-ink" />
@@ -128,7 +130,7 @@ export function PurchasePanel({ product }: { product: Product }) {
       <div className="mt-8 divide-y divide-line border-y border-line">
         <details className="group py-4" open>
           <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-ink">
-            Details & care <Plus className="size-4 transition-transform group-open:rotate-45" />
+            {t("product.details")} <Plus className="size-4 transition-transform group-open:rotate-45" />
           </summary>
           <ul className="mt-3 space-y-1.5 text-sm text-stone">
             {product.details.map((d) => <li key={d}>{d}</li>)}
@@ -136,11 +138,11 @@ export function PurchasePanel({ product }: { product: Product }) {
         </details>
         <details className="group py-4">
           <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-ink">
-            Delivery & returns <Plus className="size-4 transition-transform group-open:rotate-45" />
+            {t("product.delivery")} <Plus className="size-4 transition-transform group-open:rotate-45" />
           </summary>
           <div className="mt-3 space-y-2 text-sm text-stone">
-            <p className="flex gap-2"><Truck className="mt-0.5 size-4 shrink-0" /> Inside Dhaka in 1–2 days, rest of Bangladesh in 2–4 days, worldwide in 7–14 days.</p>
-            <p className="flex gap-2"><RotateCcw className="mt-0.5 size-4 shrink-0" /> Free 7-day returns on full-price pieces, unworn with tags.</p>
+            <p className="flex gap-2"><Truck className="mt-0.5 size-4 shrink-0" /> {t("product.deliveryText")}</p>
+            <p className="flex gap-2"><RotateCcw className="mt-0.5 size-4 shrink-0" /> {t("product.returnsText")}</p>
           </div>
         </details>
       </div>

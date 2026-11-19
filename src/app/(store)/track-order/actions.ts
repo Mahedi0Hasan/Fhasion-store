@@ -6,6 +6,7 @@ import { COUNTRY_CODES } from "@/lib/countries";
 import { toE164 } from "@/lib/validation/checkout";
 import { isDbConfigured, serviceClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rate-limit";
+import { getI18n } from "@/lib/i18n/server";
 
 export type TrackedOrder = {
   order_number: string;
@@ -22,24 +23,25 @@ export type TrackedOrder = {
 export type TrackState = { error?: string; order?: TrackedOrder };
 
 const schema = z.object({
-  order_number: z.string().trim().toUpperCase().regex(/^DM-\d{6}-[0-9A-F]{6}$/, "Order numbers look like DM-261118-A1B2C3."),
+  order_number: z.string().trim().toUpperCase().regex(/^DM-\d{6}-[0-9A-F]{6}$/, "err.trackFormat"),
   phone: z.string().trim().min(6).max(24),
   country: z.enum(COUNTRY_CODES).default("BD"),
 });
 
 export async function trackOrder(_prev: TrackState, fd: FormData): Promise<TrackState> {
+  const { t } = await getI18n();
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (!rateLimit(`track:${ip}`, 10, 60_000).ok) return { error: "Too many attempts. Please wait a minute." };
-  if (!isDbConfigured()) return { error: "Order tracking isn't connected yet. Please try again soon." };
+  if (!rateLimit(`track:${ip}`, 10, 60_000).ok) return { error: t("err.rate") };
+  if (!isDbConfigured()) return { error: t("err.trackNotConnected") };
 
   const parsed = schema.safeParse(Object.fromEntries(fd));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Please check your details." };
+  if (!parsed.success) { const m = parsed.error.issues[0]?.message; return { error: m?.startsWith("err.") ? t(m) : t("err.check") }; }
   const phone = toE164(parsed.data.phone, parsed.data.country);
-  if (!phone) return { error: "Please enter the phone number used for the order." };
+  if (!phone) return { error: t("err.trackPhone") };
 
   const { data, error } = await serviceClient().rpc("track_order", { p_order_number: parsed.data.order_number, p_phone: phone });
-  if (error) return { error: "We couldn't look that up right now. Please try again." };
+  if (error) return { error: t("err.trackFailed") };
   // Same message whether the number or the phone is wrong — don't reveal which.
-  if (!data) return { error: "We couldn't find an order with that number and phone." };
+  if (!data) return { error: t("err.trackNotFound") };
   return { order: data as TrackedOrder };
 }

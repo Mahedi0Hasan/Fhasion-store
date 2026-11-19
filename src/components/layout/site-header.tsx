@@ -6,25 +6,22 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useStore } from "@/components/cart/store-provider";
+import { useI18n } from "@/lib/i18n/client";
 
 const NAV = [
-  { label: "Women", href: "/shop?category=womens-fashion" },
-  { label: "Men", href: "/shop?category=mens-fashion" },
-  { label: "Kids", href: "/shop?category=kids-fashion" },
-  { label: "Collections", href: "/shop" },
-  { label: "Journal", href: "/about" },
-];
-
-const ANNOUNCEMENTS = [
-  "Free delivery inside Dhaka on orders over ৳ 5,000",
-  "Worldwide shipping — prices shown in BDT & USD",
-  "Easy 7-day returns on all full-price pieces",
+  { key: "nav.women", href: "/shop?category=womens-fashion" },
+  { key: "nav.men", href: "/shop?category=mens-fashion" },
+  { key: "nav.kids", href: "/shop?category=kids-fashion" },
+  { key: "nav.collections", href: "/shop" },
+  { key: "nav.journal", href: "/about" },
 ];
 
 export function AnnouncementBar() {
+  const { t } = useI18n();
+  const ANNOUNCEMENTS = [0, 1, 2].map((n) => t(`announce.${n}`));
   const [i, setI] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % ANNOUNCEMENTS.length), 4500);
+    const t = setInterval(() => setI((v) => (v + 1) % 3), 4500);
     return () => clearInterval(t);
   }, []);
   return (
@@ -50,6 +47,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { count, wishlist, openDrawer, closeDrawer, hydrated } = useStore();
+  const { t } = useI18n();
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
 
@@ -76,7 +74,7 @@ export function SiteHeader() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label="Open menu"
+              aria-label={t("nav.openMenu")}
               aria-expanded={open}
               onClick={() => setOpen(true)}
               className="-ml-2 grid size-10 place-items-center md:hidden"
@@ -86,8 +84,8 @@ export function SiteHeader() {
             <nav aria-label="Primary" className="hidden md:block">
               <ul className="flex items-center gap-7">
                 {NAV.slice(0, 4).map((n) => (
-                  <li key={n.label}>
-                    <NavLink href={n.href}>{n.label}</NavLink>
+                  <li key={t(n.key)}>
+                    <NavLink href={n.href}>{t(n.key)}</NavLink>
                   </li>
                 ))}
               </ul>
@@ -95,20 +93,21 @@ export function SiteHeader() {
           </div>
 
           {/* Logo */}
-          <Link href="/" aria-label="DEMO home" className="font-serif text-[1.9rem] leading-none tracking-[0.28em] text-ink md:text-[2.1rem]">
+          <Link href="/" lang="en" aria-label={t("nav.home")} className="font-serif text-[1.9rem] leading-none tracking-[0.28em] text-ink md:text-[2.1rem]">
             DEMO
           </Link>
 
           {/* Right */}
           <div className="flex items-center justify-end gap-0.5 md:gap-1.5">
-            <IconLink href="/shop#search" label="Search"><Search className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
-            <IconLink href="/wishlist" label={`Wishlist, ${wishlist.length} items`} className="hidden sm:grid">
+            <LangSwitch className="inline-flex h-10 items-center rounded-full px-2 text-[0.75rem] font-medium tracking-wide transition-colors hover:bg-sand sm:px-3 sm:text-[0.78rem]" />
+            <IconLink href="/shop#search" label={t("nav.search")}><Search className="size-[1.15rem]" strokeWidth={1.5} /></IconLink>
+            <IconLink href="/wishlist" label={t("nav.wishlist", { n: wishlist.length })} className="hidden sm:grid">
               <span className="relative">
                 <Heart className="size-[1.15rem]" strokeWidth={1.5} />
                 {hydrated && wishlist.length > 0 && <Dot n={wishlist.length} />}
               </span>
             </IconLink>
-            <button type="button" onClick={openDrawer} aria-label={`Open bag, ${count} items`} className="grid size-10 place-items-center rounded-full transition-colors hover:bg-sand">
+            <button type="button" onClick={openDrawer} aria-label={t("nav.bag", { n: count })} className="grid size-10 place-items-center rounded-full transition-colors hover:bg-sand">
               <span className="relative">
                 <ShoppingBag className="size-[1.15rem]" strokeWidth={1.5} />
                 <AnimatePresence>
@@ -134,7 +133,7 @@ export function SiteHeader() {
             <motion.aside
               role="dialog"
               aria-modal="true"
-              aria-label="Menu"
+              aria-label={t("nav.menu")}
               className="fixed inset-y-0 left-0 z-50 flex w-[86%] max-w-sm flex-col bg-cream px-6 pb-8 pt-4 md:hidden"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -142,29 +141,29 @@ export function SiteHeader() {
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="flex h-12 items-center justify-between">
-                <span className="font-serif text-2xl tracking-[0.28em]">DEMO</span>
-                <button type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="-mr-2 grid size-10 place-items-center">
+                <span lang="en" className="font-serif text-2xl tracking-[0.28em]">DEMO</span>
+                <button type="button" aria-label={t("nav.closeMenu")} onClick={() => setOpen(false)} className="-mr-2 grid size-10 place-items-center">
                   <X className="size-5" strokeWidth={1.5} />
                 </button>
               </div>
               <ul className="mt-10 space-y-1">
                 {NAV.map((n, i) => (
                   <motion.li
-                    key={n.label}
+                    key={t(n.key)}
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.15 + i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <Link href={n.href} className="block py-2 font-serif text-4xl text-ink">
-                      {n.label}
+                      {t(n.key)}
                     </Link>
                   </motion.li>
                 ))}
               </ul>
               <div className="mt-auto space-y-3 border-t border-line pt-6 text-sm text-stone">
-                <Link href="/track-order" className="block">Track an order</Link>
-                <Link href="/wishlist" className="block">Wishlist</Link>
-                <Link href="/contact" className="block">Contact</Link>
+                <Link href="/track-order" className="block">{t("nav.track")}</Link>
+                <Link href="/wishlist" className="block">{t("nav.wishlistLink")}</Link>
+                <Link href="/contact" className="block">{t("nav.contact")}</Link>
               </div>
             </motion.aside>
           </>
@@ -192,6 +191,7 @@ function IconLink({ href, label, className = "grid", children }: { href: string;
 }
 
 function Dot({ n }: { n: number }) {
+  const { num } = useI18n();
   return (
     <motion.span
       initial={{ scale: 0.4, opacity: 0 }}
@@ -200,7 +200,25 @@ function Dot({ n }: { n: number }) {
       transition={{ type: "spring", stiffness: 500, damping: 22 }}
       className="absolute -right-2 -top-1.5 grid size-4 place-items-center rounded-full bg-ink text-[0.6rem] font-medium text-ivory"
     >
-      {n > 9 ? "9+" : n}
+      {n > 9 ? `${num(9)}+` : num(n)}
     </motion.span>
+  );
+}
+
+/** Toggles EN ⇄ বাংলা. Saved in a cookie so the server renders the chosen language. */
+export function LangSwitch({ className = "" }: { className?: string }) {
+  const { locale, setLocale, t, switching } = useI18n();
+  return (
+    <button
+      type="button"
+      onClick={() => setLocale(locale === "bn" ? "en" : "bn")}
+      aria-label={t("lang.switchLabel")}
+      lang={locale === "bn" ? "en" : "bn"}
+      disabled={switching}
+      className={`${className} disabled:opacity-50`}
+    >
+      <span className="sm:hidden">{t("lang.short")}</span>
+      <span className="hidden sm:inline">{t("lang.switchTo")}</span>
+    </button>
   );
 }

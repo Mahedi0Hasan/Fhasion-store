@@ -6,7 +6,7 @@ export const metadata = { title: "Categories" };
 
 export default async function Categories() {
   const db = await userClient();
-  const { data } = await db.from("categories").select("id,name,slug,sort,is_active,products(count)").order("sort");
+  const { data } = await db.from("categories").select("id,name,name_bn,slug,sort,is_active,products(count)").order("sort");
   return (
     <>
       <PageHead title="Categories" sub="Shown as filters in the shop. Hidden categories disappear from the storefront." />

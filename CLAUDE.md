@@ -37,8 +37,15 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (tokens in 
 - [x] Phase 6: admin dashboard at `/admin` (Supabase Auth email+password via `@supabase/ssr`; middleware gate + server `requireStaff/requireAdmin` + RLS). Overview KPIs & 30-day chart, low stock, orders (search/filter/detail, `staff_update_order` with transition rules + restock on cancel, COD paid on delivery), products (CRUD, sizes/SKU/stock, photo upload to Storage bucket `product-images` with magic-byte checks), inventory, categories, coupons, customers (grouped by phone), reports, settings (delivery fees; admin-only). Storefront now reads products from the DB (`src/lib/catalog-source.ts`, tag `catalog`), falling back to `DEMO_PRODUCTS`.
 - [ ] Phase 7: tests (unit + Playwright), authz tests
 - [ ] Phase 8: Vercel + Supabase production deploy, docs
-- [ ] i18n (EN/BN) and BDT/USD display with configured rates
+- [x] Bilingual storefront (English + বাংলা), 2026-11-19:
+  - UI strings in `src/lib/i18n/dictionaries/{en,bn}.ts` (bn is type-checked against en). Server: `getI18n()`; client: `useI18n()` (`t`, `tm` for "err.*" keys, `money`, `num`).
+  - Locale = `lang` cookie (EN ⇄ বাংলা switch in header), else Accept-Language (bn → Bangla), else English. One URL per page (no /bn prefix).
+  - Product/category Bangla content: `name_bn`, `colour_bn`, `description_bn`, `details_bn`, `categories.name_bn` (migration 0005), editable in admin; blank falls back to English. Filter/URL keys stay English so links work in both languages; search matches both.
+  - Bengali digits for prices/counts (`bn-BD`). Fonts: Noto Serif Bengali + Hind Siliguri as per-glyph fallbacks. `:lang(bn)` CSS adds line-height and removes tracking; Latin wordmarks use `lang="en"`.
+  - Never split Bengali text into letters for animation (breaks conjuncts). Hero animates the whole word in Bangla.
+  - Validation messages are dictionary keys (`err.*`); API routes answer in the shopper's language.
+- [ ] USD price toggle on the storefront (checkout already shows a USD reference when `BDT_PER_USD` is set)
 
 ## Testing
 - `npm run test:db`: 22 SQL tests (RLS, pricing, coupons, stock, concurrency, webhooks, tracking) against a throwaway Postgres with `supabase/tests/00_supabase_shim.sql`. Env: `TEST_PG_HOST`, `TEST_PG_PORT`.
-- The end-to-end browser suite was run against Postgres + PostgREST locally (24 checks, all passing on 2026-11-19). Admin flow tested against real Supabase Auth (GoTrue v2.177) + PostgREST: 30 checks passing.
+- The end-to-end browser suite was run against Postgres + PostgREST locally (24 checks, all passing on 2026-11-19). Admin flow tested against real Supabase Auth (GoTrue v2.177) + PostgREST: 30 checks passing. Bangla flow: 27 checks passing (2026-11-19).

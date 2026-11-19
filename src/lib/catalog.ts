@@ -26,24 +26,26 @@ export type Product = {
   tags: ("new" | "bestseller")[];
   createdAt: string;
   popularity: number;
+  /** Optional Bangla content; any missing field falls back to English. */
+  bn?: { name?: string; colour?: string; description?: string; details?: string[] };
 };
 
-export type Category = { slug: string; name: string };
+export type Category = { slug: string; name: string; nameBn?: string };
 
 export const DEMO_CATEGORIES: Category[] = [
-  { slug: "womens-fashion", name: "Women's Fashion" },
-  { slug: "mens-fashion", name: "Men's Fashion" },
-  { slug: "kids-fashion", name: "Kids' Fashion" },
-  { slug: "t-shirts", name: "T-shirts" },
-  { slug: "shirts", name: "Shirts" },
-  { slug: "pants", name: "Pants" },
-  { slug: "jeans", name: "Jeans" },
-  { slug: "dresses", name: "Dresses" },
-  { slug: "jackets", name: "Jackets" },
-  { slug: "hoodies", name: "Hoodies & Knitwear" },
-  { slug: "shoes", name: "Shoes" },
-  { slug: "bags", name: "Bags" },
-  { slug: "accessories", name: "Accessories" },
+  { slug: "womens-fashion", name: "Women's Fashion", nameBn: "নারীদের ফ্যাশন" },
+  { slug: "mens-fashion", name: "Men's Fashion", nameBn: "পুরুষদের ফ্যাশন" },
+  { slug: "kids-fashion", name: "Kids' Fashion", nameBn: "শিশুদের ফ্যাশন" },
+  { slug: "t-shirts", name: "T-shirts", nameBn: "টি-শার্ট" },
+  { slug: "shirts", name: "Shirts", nameBn: "শার্ট" },
+  { slug: "pants", name: "Pants", nameBn: "প্যান্ট" },
+  { slug: "jeans", name: "Jeans", nameBn: "জিন্স" },
+  { slug: "dresses", name: "Dresses", nameBn: "ড্রেস" },
+  { slug: "jackets", name: "Jackets", nameBn: "জ্যাকেট" },
+  { slug: "hoodies", name: "Hoodies & Knitwear", nameBn: "হুডি ও নিটওয়্যার" },
+  { slug: "shoes", name: "Shoes", nameBn: "জুতা" },
+  { slug: "bags", name: "Bags", nameBn: "ব্যাগ" },
+  { slug: "accessories", name: "Accessories", nameBn: "অ্যাক্সেসরিজ" },
 ];
 
 /** Gender-level categories match by `gender`; the rest by `category`. */
@@ -56,6 +58,7 @@ const GENDER_CATEGORY: Record<string, Product["gender"]> = {
 export const DEMO_PRODUCTS: Product[] = [
   {
     id: "p1",
+    bn: { name: "ক্লাউড ক্যাশমিয়ার কার্ডিগান", colour: "আইভরি", description: "ব্রাশড মঙ্গোলিয়ান ক্যাশমিয়ারে তৈরি ক্রপড ভি-নেক কার্ডিগান। পালকের মতো হালকা, একটু বক্সি গড়ন, মাদার-অফ-পার্ল বোতাম আর হাতা ও নিচে নরম রিব।", details: ["১০০% গ্রেড-এ ক্যাশমিয়ার", "মাদার-অফ-পার্ল বোতাম", "ঢিলেঢালা, ক্রপড ফিট", "ঠান্ডা পানিতে হাতে ধুয়ে সমতলে শুকান"] },
     slug: "cloud-cashmere-cardigan-ivory",
     name: "Cloud Cashmere Cardigan",
     category: "hoodies",
@@ -77,6 +80,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p2",
+    bn: { name: "প্লিটেড কলাম ড্রেস", colour: "সিয়েনা", description: "নাইফ-প্লিটেড জর্জেটে মক-নেক কলাম ড্রেস, ওপরে একটি ক্রপড প্যানেল যা চলার সাথে স্কার্টের ওপর ভেসে থাকে।", details: ["১০০% রিসাইকেলড পলিয়েস্টার জর্জেট", "স্থায়ী নাইফ প্লিট", "লাইনিং ছাড়া, সহজে পরা যায়", "ডেলিকেট মোডে মেশিনে ধোয়া যায়"] },
     slug: "pleated-column-dress-sienna",
     name: "Pleated Column Dress",
     category: "dresses",
@@ -95,6 +99,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p3",
+    bn: { name: "নিট ব্লক পাম্প", colour: "স্যান্ড", description: "স্কয়ার-টো পাম্প, সেলাইবিহীন রিসাইকেলড নিটের উপরিভাগ আর ৫ সেমি ভাস্কর্য-আকৃতির ব্লক হিল। সারাদিন আরামে পরা যায়, সন্ধ্যার জন্যও মানানসই।", details: ["রিসাইকেলড বোতল থেকে বোনা", "৫ সেমি ব্লক হিল", "কুশনযুক্ত খোলা যায় এমন ইনসোল", "উপরিভাগ মেশিনে ধোয়া যায়"] },
     slug: "knit-block-pump-sand",
     name: "Knit Block Pump",
     category: "shoes",
@@ -114,6 +119,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p4",
+    bn: { name: "ব্রাশড ক্রু সোয়েটার", colour: "হেদার গ্রে", description: "ভারী লুপব্যাক কটনের ক্রু সোয়েটার, ভেতরে নরম ব্রাশ করা, নামানো কাঁধ আর ঢিলেঢালা গড়ন। যে সোয়েটার আপনি সবার আগে হাতে নেবেন।", details: ["১০০% অর্গানিক কটন লুপব্যাক, ৪২০ জিএসএম", "ভেতরে ব্রাশ করা", "রিল্যাক্সড ফিট", "ঠান্ডা পানিতে মেশিনে ধোয়া যায়"] },
     slug: "brushed-crew-sweater-heather",
     name: "Brushed Crew Sweater",
     category: "hoodies",
@@ -132,6 +138,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p5",
+    bn: { name: "হেরিটেজ ট্রেঞ্চ কোট", colour: "স্টোন", description: "পানি-প্রতিরোধী কটন গ্যাবার্ডিনে ডাবল-ব্রেস্টেড ট্রেঞ্চ, স্টর্ম ফ্ল্যাপ, এপোলেট আর বেল্টসহ কোমর। লম্বা কাট, ঢিলেঢালা পরার জন্য।", details: ["১০০% কটন গ্যাবার্ডিন, পানি-প্রতিরোধী", "হর্ন-ধাঁচের বোতাম", "খোলা যায় এমন বেল্ট", "শুধু ড্রাই ক্লিন"] },
     slug: "heritage-trench-coat-stone",
     name: "Heritage Trench Coat",
     category: "jackets",
@@ -150,6 +157,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p6",
+    bn: { name: "ওয়াইড-লেগ উল ট্রাউজার", colour: "ওট", description: "হাই-রাইজ, ডাবল-প্লিটেড ট্রাউজার, নরম উল ব্লেন্ডে তৈরি, মেঝে পর্যন্ত চওড়া সোজা লাইনে নেমে আসে।", details: ["৭০% উল, ৩০% ভিসকস", "সামনে দুটি প্লিট", "পাশে পকেট", "ড্রাই ক্লিন করার পরামর্শ"] },
     slug: "wide-leg-wool-trouser-oat",
     name: "Wide-Leg Wool Trouser",
     category: "pants",
@@ -170,6 +178,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p7",
+    bn: { name: "প্লিটেড ম্যাক্সি ড্রেস", colour: "স্যান্ড", description: "হাই-নেক ম্যাক্সি ড্রেস, ফিটেড নিট বডিস আর পুরো সানরে-প্লিটেড স্কার্ট যা প্রতিটি বাতাসে দোলে।", details: ["নিট বডিস, প্লিটেড শিফন স্কার্ট", "পেছনে লুকানো চেইন", "স্কার্টে পূর্ণ লাইনিং", "শুধু ড্রাই ক্লিন"] },
     slug: "pleated-maxi-dress-sand",
     name: "Pleated Maxi Dress",
     category: "dresses",
@@ -189,6 +198,7 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: "p8",
+    bn: { name: "লিনেন স্যুট সেট", colour: "ফ্ল্যাক্স", description: "ধোয়া বেলজিয়ান ফ্ল্যাক্সে আনস্ট্রাকচার্ড সিঙ্গেল-ব্রেস্টেড ব্লেজার আর মানানসই চওড়া ট্রাউজার। ঢাকার গরমে আরামদায়ক, সব জায়গায় সুন্দর।", details: ["১০০% বেলজিয়ান লিনেন", "লাইনিং ছাড়া, হাফ-ক্যানভাস ব্লেজার", "সেট হিসেবে বিক্রি", "ঠান্ডা পানিতে মেশিনে ধুয়ে ঝুলিয়ে শুকান"] },
     slug: "linen-suit-set-flax",
     name: "Linen Suit Set",
     category: "womens-fashion",
@@ -208,6 +218,20 @@ export const DEMO_PRODUCTS: Product[] = [
 ];
 
 /* ───────────────────────── helpers ───────────────────────── */
+
+/** Swap in Bangla content where it exists; English stays as the fallback. */
+export function localizeProduct(p: Product, locale: "en" | "bn"): Product {
+  if (locale !== "bn" || !p.bn) return p;
+  return {
+    ...p,
+    name: p.bn.name || p.name,
+    colour: p.bn.colour || p.colour,
+    description: p.bn.description || p.description,
+    details: p.bn.details?.length ? p.bn.details : p.details,
+    images: p.images.map((i) => ({ ...i, alt: p.bn?.name ? `${p.bn.name}${p.bn.colour ? `, ${p.bn.colour}` : ""}` : i.alt })),
+  };
+}
+export const localizeCategory = (c: Category, locale: "en" | "bn"): Category => (locale === "bn" && c.nameBn ? { ...c, name: c.nameBn } : c);
 
 export const byTag = (list: Product[], tag: Product["tags"][number]) => list.filter((p) => p.tags.includes(tag));
 export const priceOf = (p: Product) => p.salePriceBDT ?? p.priceBDT;
@@ -259,7 +283,8 @@ export function facets(list: Product[]) {
     if (ib >= 0) return 1;
     return a.localeCompare(b, undefined, { numeric: true });
   });
-  const colours = Array.from(new Map(list.map((p) => [p.colour, p.colourHex])).entries()).map(([name, hex]) => ({ name, hex }));
+  // `name` is the stable English key used in URLs; `nameBn` is only for display.
+  const colours = Array.from(new Map(list.map((p) => [p.colour, { hex: p.colourHex, nameBn: p.bn?.colour }])).entries()).map(([name, v]) => ({ name, hex: v.hex, nameBn: v.nameBn }));
   const max = list.length ? Math.ceil(Math.max(...list.map(priceOf)) / 1000) * 1000 : 0;
   return { sizes, colours, price: { min: 0, max } };
 }
@@ -295,7 +320,7 @@ export function parseShopQuery(sp: Params, cats: Category[], f: Facets): ShopQue
 export function queryProducts(all: Product[], cats: Category[], q: ShopQuery) {
   const term = q.q?.toLowerCase();
   let list = all.filter((p) => {
-    if (term && ![p.name, p.colour, p.description, categoryName(cats, p.category) ?? ""].some((s) => s.toLowerCase().includes(term))) return false;
+    if (term && ![p.name, p.colour, p.description, categoryName(cats, p.category) ?? "", p.bn?.name ?? "", p.bn?.colour ?? "", cats.find((c) => c.slug === p.category)?.nameBn ?? ""].some((s) => s.toLowerCase().includes(term))) return false;
     if (q.category) {
       const g = GENDER_CATEGORY[q.category];
       if (g ? !(p.gender === g || p.gender === "unisex") : p.category !== q.category) return false;

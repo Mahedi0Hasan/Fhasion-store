@@ -12,31 +12,32 @@ export function toE164(raw: string, country: string) {
   return p && p.isValid() ? p.number : null;
 }
 
-const text = (min: number, max: number, msg: string) => z.string().trim().min(min, msg).max(max, "That's a bit long.");
+// Messages are dictionary keys ("err.*"), translated wherever they're shown.
+const text = (min: number, max: number, msg: string) => z.string().trim().min(min, msg).max(max, "err.tooLong");
 
 /** Shared by the checkout form (client) and /api/orders (server). */
 export const checkoutSchema = z
   .object({
-    name: text(2, 120, "Please enter your full name."),
-    email: z.string().trim().toLowerCase().email("Please enter a valid email.").max(254),
-    country: z.enum(COUNTRY_CODES, { errorMap: () => ({ message: "Choose a country." }) }),
-    phone: z.string().trim().min(6, "Please enter a phone number.").max(24),
-    address_line1: text(3, 200, "Please enter your street address."),
+    name: text(2, 120, "err.name"),
+    email: z.string().trim().toLowerCase().email("err.email").max(254),
+    country: z.enum(COUNTRY_CODES, { errorMap: () => ({ message: "err.country" }) }),
+    phone: z.string().trim().min(6, "err.phoneMissing").max(24),
+    address_line1: text(3, 200, "err.address"),
     address_line2: z.string().trim().max(200).optional().or(z.literal("")),
-    city: text(2, 80, "Please enter your city."),
+    city: text(2, 80, "err.city"),
     region: z.string().trim().max(80).optional().or(z.literal("")),
     postal_code: z.string().trim().max(20).optional().or(z.literal("")),
     delivery_area: z.enum(["dhaka", "outside-dhaka"]).optional(),
-    payment_method: z.enum(PAYMENT_METHODS, { errorMap: () => ({ message: "Choose a payment method." }) }),
+    payment_method: z.enum(PAYMENT_METHODS, { errorMap: () => ({ message: "err.method" }) }),
     notes: z.string().trim().max(500).optional().or(z.literal("")),
     coupon_code: z.string().trim().max(32).optional().or(z.literal("")),
   })
   .superRefine((v, ctx) => {
     if (!toE164(v.phone, v.country)) {
-      ctx.addIssue({ path: ["phone"], code: "custom", message: v.country === "BD" ? "Enter a valid Bangladeshi mobile, e.g. 01712 345678." : "Enter a valid phone number with country code." });
+      ctx.addIssue({ path: ["phone"], code: "custom", message: v.country === "BD" ? "err.phoneBD" : "err.phoneIntl" });
     }
-    if (v.country === "BD" && !v.delivery_area) ctx.addIssue({ path: ["delivery_area"], code: "custom", message: "Choose inside or outside Dhaka." });
-    if (v.payment_method === "cod" && v.country !== "BD") ctx.addIssue({ path: ["payment_method"], code: "custom", message: "Cash on delivery is only available in Bangladesh." });
+    if (v.country === "BD" && !v.delivery_area) ctx.addIssue({ path: ["delivery_area"], code: "custom", message: "err.area" });
+    if (v.payment_method === "cod" && v.country !== "BD") ctx.addIssue({ path: ["payment_method"], code: "custom", message: "err.codBD" });
   });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
