@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Boxes, LayoutDashboard, Package, Settings, ShoppingBag, Tag, Tags, Users, ExternalLink } from "lucide-react";
+import { BarChart3, Boxes, LayoutDashboard, Mail, Package, Settings, ShoppingBag, Tag, Tags, Users, ExternalLink } from "lucide-react";
 
 const ITEMS = [
   { href: "/admin", label: "Overview", Icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const ITEMS = [
   { href: "/admin/categories", label: "Categories", Icon: Tags },
   { href: "/admin/coupons", label: "Coupons", Icon: Tag },
   { href: "/admin/customers", label: "Customers", Icon: Users },
+  { href: "/admin/messages", label: "Messages", Icon: Mail },
   { href: "/admin/reports", label: "Reports", Icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", Icon: Settings, adminOnly: true },
 ];

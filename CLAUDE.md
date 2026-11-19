@@ -44,6 +44,7 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (tokens in 
   - Bengali digits for prices/counts (`bn-BD`). Fonts: Noto Serif Bengali + Hind Siliguri as per-glyph fallbacks. `:lang(bn)` CSS adds line-height and removes tracking; Latin wordmarks use `lang="en"`.
   - Never split Bengali text into letters for animation (breaks conjuncts). Hero animates the whole word in Bangla.
   - Validation messages are dictionary keys (`err.*`); API routes answer in the shopper's language.
+- [x] Info pages (2026-11-19): about, contact (form → `contact_messages`, migration 0006, admin `/admin/messages`), faq (dynamic payment answer + FAQPage JSON-LD), 4 policies via `components/info/policy-page.tsx` (shipping table reads live zones). Content in `src/content/pages.ts` (EN+BN). Store contact details from `NEXT_PUBLIC_STORE_*` env, hidden when unset. `sitemap.ts`, `robots.ts`. Info flow test: 37 checks passing.
 - [ ] USD price toggle on the storefront (checkout already shows a USD reference when `BDT_PER_USD` is set)
 
 ## Testing
